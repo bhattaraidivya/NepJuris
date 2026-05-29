@@ -7,6 +7,19 @@ from rag.embedder import create_embedding
 from rag.retriever import retrieve_top_chunks
 from rag.responder import generate_response
 
+def generate_title(message: str):
+    words = message.split()
+
+    stopwords = {
+        "what", "is", "the", "a", "an", "how", "to", "in", "of", "about", "explain"
+    }
+
+    filtered = [w for w in words if w.lower() not in stopwords]
+
+    title = " ".join(filtered[:6])
+
+    return title.title() if title else "New Chat"
+
 # -------------------------
 # APP INIT
 # -------------------------
@@ -49,6 +62,7 @@ def get_documents():
 def chat(req: ChatRequest):
 
     user_msg = req.message
+    chat_title = generate_title(user_msg)
 
     # 1. Convert query to embedding
     query_embedding = create_embedding(user_msg)
@@ -75,7 +89,11 @@ def chat(req: ChatRequest):
         combined_text,
         score
     )
+  
+   
 
     return {
-        "response": response
+        "response": response,
+        "title": chat_title
+       
     }
