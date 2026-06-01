@@ -1,0 +1,35 @@
+[
+  {
+    "id": "doc_001",
+    "name": "Constitution of Nepal (English)",
+    "file_path": "data/raw/constitution_en.pdf",
+    "language": "en",
+    "type": "pdf",
+    "category": "constitution",
+    "extraction_type": "text",
+    "source": "official",
+    "status": "pending"
+  },
+  {
+    "id": "doc_002",
+    "name": "Civil Code of Nepal (English)",
+    "file_path": "data/raw/civil_code_en.pdf",
+    "language": "en",
+    "type": "pdf",
+    "category": "civil_code",
+    "extraction_type": "text",
+    "source": "official",
+    "status": "pending"
+  },
+  {
+    "id": "doc_003",
+    "name": "Supreme Court Landmark Decision (English)",
+    "file_path": "data/raw/supreme_court_landmark_en.pdf",
+    "language": "en",
+    "type": "pdf",
+    "category": "case_law",
+    "extraction_type": "text",
+    "source": "court",
+    "status": "pending"
+  }
+]

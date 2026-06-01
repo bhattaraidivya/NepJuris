@@ -1,42 +1,34 @@
-import numpy as np
+import os
+from rag.embedder import create_embedding
+from rag.vector_store import VectorStore
 
 
-def cosine_similarity(a, b):
+class Retriever:
+    def __init__(self, index_path=None):
+        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    a = np.array(a)
-    b = np.array(b)
+        # ✅ FIXED PATH (your actual location)
+        self.index_path = index_path or os.path.join(
+            BASE_DIR,
+            "data",
+            "embeddings",
+            "faiss_index"
+        )
 
-    dot = np.dot(a, b)
+        self.store = VectorStore(dim=384)
+        self.loaded = False
 
-    norm_a = np.linalg.norm(a)
-    norm_b = np.linalg.norm(b)
+    def load(self):
+        try:
+            self.store.load(self.index_path)
+            self.loaded = True
+        except Exception as e:
+            print("⚠️ FAISS index not loaded:", e)
+            self.loaded = False
 
-    return dot / (norm_a * norm_b)
+    def retrieve(self, query, top_k=5):
+        if not self.loaded:
+            raise Exception("FAISS index not loaded. Call load() first.")
 
-
-def retrieve_top_chunks(query_embedding, documents, top_k=3):
-
-    results = []
-
-    for doc in documents:
-
-        for chunk in doc["chunks"]:
-
-            score = cosine_similarity(
-                query_embedding,
-                chunk["embedding"]
-            )
-
-            results.append({
-                "text": chunk["text"],
-                "score": score
-            })
-
-    # Sort by highest score
-    results = sorted(
-        results,
-        key=lambda x: x["score"],
-        reverse=True
-    )
-
-    return results[:top_k]
+        query_embedding = create_embedding(query)
+        return self.store.search(query_embedding, top_k)

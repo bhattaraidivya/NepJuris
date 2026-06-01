@@ -1,132 +1,249 @@
-# 🇳🇵 NyayaAI — Project State
+# 🇳🇵 NyayaAI — AI Legal Assistant
 
-## 📌 Overview
-NyayaAI is an AI-powered legal assistant platform designed for Nepal.  
-It combines a modern web frontend with a Retrieval-Augmented Generation (RAG) backend to provide legal explanations in English and Nepali.
+## Project Overview
 
----
+NyayaAI is an AI-powered legal assistant designed for Nepal. The goal is to provide legal information and guidance through Retrieval-Augmented Generation (RAG) using Nepalese legal documents such as the Constitution, Civil Code, Criminal Code, Acts, Regulations, and Court Decisions.
 
-## 🚀 Current Stage: MVP (v0.1)
+The project is being developed as a portfolio-grade AI + Full Stack application demonstrating:
 
-The system is currently a **working minimum viable product** with core AI chat functionality fully functional.
-
----
-
-## 🧠 Core Features Implemented
-
-### 🟢 Backend (FastAPI + RAG)
-- FastAPI server running successfully
-- `/chat` endpoint implemented
-- Document loading system
-- Text chunking + embedding generation
-- Cosine similarity-based retrieval system
-- Returns relevant legal context with confidence score
+* Modern React Frontend Architecture
+* FastAPI Backend Development
+* Retrieval-Augmented Generation (RAG)
+* Vector Databases (FAISS)
+* Local LLM Integration
+* AI System Design
+* Scalable Software Architecture
 
 ---
 
-### 🟢 Frontend (React + Vite)
-- React application initialized with routing
-- Clean page-based architecture:
-  - Home page
-  - Chat page
-- Chat UI implemented with:
-  - Message bubbles (user + AI)
-  - Input box
-  - Message history state management
-- API integration with backend via fetch
+# Current Development Stage
+
+## Completed
+
+### Frontend MVP
+
+* React + Vite setup
+* Chat interface
+* Sidebar conversation management
+* Chat history persistence (localStorage)
+* Rename conversations
+* Delete conversations
+* Typing indicator
+* Auto-scroll
+* API integration layer
+
+### Data Engine
+
+* PDF document collection
+* Metadata catalog system
+* PDF text extraction (PyMuPDF)
+* Text chunking pipeline
+* Multi-document ingestion
+* Document categorization
+
+### Embedding Pipeline
+
+* SentenceTransformer integration
+* Chunk embedding generation
+* Multi-document processing
+
+### Vector Database
+
+* FAISS integration
+* Vector indexing
+* Metadata storage
+* Persistent vector database
+
+### Retrieval Engine
+
+* Query embedding generation
+* Semantic similarity search
+* Top-k chunk retrieval
+* Multi-document retrieval
 
 ---
 
-### 🟢 AI System (RAG Pipeline)
-- User query converted to embeddings
-- Similarity search against document chunks
-- Top relevant legal chunk retrieved
-- Response generated using retrieved context
+# In Progress
+
+### Generation Layer
+
+Planned architecture:
+
+User Query
+→ Retriever
+→ Top Relevant Chunks
+→ Context Builder
+→ Local LLM (Qwen)
+→ Final Answer
 
 ---
 
-## 🧪 Working Flow
+# Planned Features
 
-User Input → React Chat UI → FastAPI `/chat`  
-→ Embedding generation → Vector similarity search  
-→ Best legal chunk retrieved → AI response returned  
-→ Rendered in chat interface
+## AI Features
 
----
+### Version 1
 
-## ⚙️ Tech Stack
+* Local LLM integration
+* RAG answer generation
+* Source-grounded responses
 
-### Frontend
-- React (Vite)
-- React Router
-- TailwindCSS (UI styling)
+### Version 2
 
-### Backend
-- FastAPI
-- Python
-- NumPy
-- Embedding model (custom or API-based)
+* Conversational memory
+* Follow-up question support
+* Context-aware conversations
 
-### AI Layer
-- RAG (Retrieval Augmented Generation)
-- Cosine similarity search
-- Document chunking system
+### Version 3
 
----
+* Nepali language support
+* English ↔ Nepali legal understanding
+* Multilingual retrieval
 
-## 📂 Current Pages
+### Version 4
 
-- `/` → Landing page (Home)
-- `/chat` → AI Legal Assistant
+* Fine-tuned legal model
+* Nepal-specific legal reasoning
+* Legal summarization
 
 ---
 
-## 🧱 Current Limitations
+# Backend Architecture
 
-- No news system yet
-- No documents UI page yet
-- No multilingual support implemented
-- UI is functional but not fully polished
-- No persistent chat history
+backend/
 
----
+├── main.py
 
-## 🎯 Next Development Phase
+├── pipeline/
+│   ├── extractor.py
+│   ├── chunker.py
+│   └── ingest.py
 
-### Phase 2 (Frontend Expansion)
-- Improve Home page (SaaS-level UI)
-- Add Legal News page
-- Add Documents/Resources page
-- Improve navigation system
+├── rag/
+│   ├── embedder.py
+│   ├── vector_store.py
+│   └── retriever.py
 
-### Phase 3 (AI Enhancements)
-- Nepali language support
-- Better retrieval ranking
-- Citation-based responses
-- Memory for chat sessions
+├── data/
+│   ├── raw/
+│   ├── embeddings/
+│   └── data_catalog.json
 
----
-
-## 🧭 Vision
-
-To build a **Nepal-focused AI legal-tech platform** that:
-- explains laws in simple language
-- supports English + Nepali
-- provides structured legal knowledge access
-- demonstrates real-world AI + full-stack engineering
+└── documents/
 
 ---
 
-## 📌 Current Status Summary
+# Frontend Architecture
 
-✔ Chat system working  
-✔ Backend + frontend connected  
-✔ RAG pipeline functional  
-⚠ UI needs refinement  
-⚠ Product pages not built yet  
+frontend/
+
+├── src/
+│
+├── pages/
+│   ├── Home.jsx
+│   └── Chat.jsx
+│
+├── components/
+│   ├── Sidebar.jsx
+│   ├── ChatBox.jsx
+│   ├── Message.jsx
+│   ├── InputBox.jsx
+│   ├── Navbar.jsx
+│   └── Features.jsx
+│
+├── services/
+│   └── api.js
+│
+├── hooks/
+│   └── useChat.js 
+│
+└── core/
+├── contracts.js
+└── apicontract.js
 
 ---
 
-## 🏁 Milestone Tag
+# Current RAG Pipeline
 
-v0.1-mvp — Working AI Chat System
+PDF Documents
+→ Extraction
+→ Chunking
+→ SentenceTransformer Embeddings
+→ FAISS Index
+
+User Query
+→ Query Embedding
+→ FAISS Retrieval
+→ Top-k Relevant Chunks
+
+(Generation Layer In Progress)
+
+---
+
+# Target Architecture
+
+User
+↓
+React Frontend
+↓
+FastAPI API
+↓
+Retriever
+↓
+FAISS Vector Database
+↓
+Relevant Legal Chunks
+↓
+Context Builder
+↓
+Local LLM (Qwen)
+↓
+AI Response
+↓
+Frontend Chat Interface
+
+---
+
+# Future Modules
+
+* Legal Document Explorer
+* Admin Dashboard
+* News Section
+* OCR Pipeline
+* Case Law Search
+* Legal Citation System
+* User Accounts
+* Document Upload System
+
+---
+
+# Technology Stack
+
+Frontend
+
+* React
+* Vite
+* TailwindCSS
+
+Backend
+
+* FastAPI
+* Python
+
+AI
+
+* SentenceTransformers
+* FAISS
+* Retrieval-Augmented Generation
+* Local LLM (Planned)
+
+Database
+
+* FAISS Vector Store
+* Metadata Storage
+
+Deployment (Planned)
+
+* Docker
+* Cloud Deployment
+* CI/CD Pipeline
