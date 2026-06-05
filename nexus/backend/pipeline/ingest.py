@@ -28,6 +28,24 @@ def load_catalog():
 
 
 # =========================
+# UPDATE DOCUMENT STATUS
+# =========================
+def update_doc_status(doc_id: str, new_status: str):
+    catalog_path = os.path.join(BASE_DIR, "data", "data_catalog.json")
+
+    with open(catalog_path, "r", encoding="utf-8") as f:
+        docs = json.load(f)
+
+    for doc in docs:
+        if doc["id"] == doc_id:
+            doc["status"] = new_status
+            break
+
+    with open(catalog_path, "w", encoding="utf-8") as f:
+        json.dump(docs, f, indent=2)
+
+
+# =========================
 # BUILD FAISS KNOWLEDGE BASE
 # =========================
 def build_knowledge_base():
@@ -42,32 +60,54 @@ def build_knowledge_base():
         print("\n==============================")
         print(f"📄 Processing: {doc['name']}")
 
-        # STEP 1: Extract text
-        text = extract_document(doc)
+        try:
+            # STEP 1: Extract text
+            text = extract_document(doc)
 
-        if not text or len(text.strip()) == 0:
-            print("⚠️ No text extracted, skipping document")
-            continue
+            if not text or len(text.strip()) == 0:
+                print("⚠️ No text extracted, skipping document")
+                continue
 
-        # STEP 2: Chunk text
-        chunks = chunk_text(text)
+            # STEP 2: Chunk text
+            chunks = chunk_text(text)
 
-        print(f"   🔹 Chunks: {len(chunks)}")
+            print(f"   🔹 Chunks: {len(chunks)}")
 
-        # STEP 3: Embed + store in FAISS
-        for i, chunk in enumerate(chunks):
-            embedding = create_embedding(chunk)
+            # STEP 3: Embed + store in FAISS
+            for i, chunk in enumerate(chunks):
+                embedding = create_embedding(chunk)
 
-            metadata = {
-                "doc_id": doc["id"],
-                "chunk_id": f"{doc['id']}_{i}",
-                "category": doc["category"],
-                "language": doc["language"],
-                "text": chunk
-            }
+            
+                metadata = {
+                    "doc_id": doc["id"],
+                    "doc_name": doc["name"],
 
-            store.add(embedding, metadata)
-            total_chunks += 1
+                    # 🔥 REAL CITATION FIELDS
+                    "source": doc["name"],
+
+                    # If available from PDF processing later
+                    "page": doc.get("page", None),
+                    "section": doc.get("section", None),
+                    "article": doc.get("article", None),
+
+                    "chunk_id": f"{doc['id']}_{i}",
+
+                    "text": chunk
+                }
+
+
+
+
+                store.add(embedding, metadata)
+                total_chunks += 1
+
+            # STEP 4: UPDATE STATUS (NEW ADDITION)
+            update_doc_status(doc["id"], "indexed")
+            print(f"   ✅ {doc['name']} indexed")
+
+        except Exception as e:
+            print(f"❌ Error processing {doc['name']}: {str(e)}")
+            update_doc_status(doc["id"], "failed")
 
     # =========================
     # SAVE FAISS INDEX

@@ -1,15 +1,17 @@
 import useChat from "../hooks/useChat";
-import Sidebar from "../components/Sidebar";
-import ChatArea from "../components/ChatArea";
+import Sidebar from "../components/chat/Sidebar";
+import ChatArea from "../components/chat/ChatArea";
 
 export default function Chat() {
   const chat = useChat();
 
   return (
-    <div className="h-screen flex flex-row bg-zinc-950 text-white overflow-hidden">
+    <div className="h-screen flex bg-zinc-950 text-white overflow-hidden">
 
+      {/* SIDEBAR (fixed width) */}
       <Sidebar {...chat} />
 
+      {/* CHAT AREA */}
       <ChatArea {...chat} />
 
     </div>

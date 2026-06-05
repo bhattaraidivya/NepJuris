@@ -1,18 +1,140 @@
-# React + Vite
+# 📘 NepJuris
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+AI Legal Workspace for Nepali Law powered by RAG + Local LLM
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+# ⚙️ Overview
 
-## React Compiler
+NepJuris is a full-stack AI legal workspace, not a chatbot.
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+It enables users to:
+- Query Nepali legal documents
+- Interact with a RAG-based AI system
+- Browse a structured legal knowledge base
+- Manage multiple conversation workspaces
+- Get AI responses grounded in real legal corpus
 
-Note: This will impact Vite dev & build performances.
+---
 
-## Expanding the ESLint configuration
+# 🧠 Core System
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Backend (FastAPI)
+- REST API server
+- PDF ingestion using PyMuPDF
+- Text chunking pipeline
+- SentenceTransformer embeddings
+- FAISS vector database
+- RAG-based retrieval system
+- Local LLM integration via Ollama (Qwen 2.5)
+
+---
+
+## Frontend (React + Vite)
+- Workspace-based chat system (not single chatbot)
+- Multi-chat sidebar (create / rename / delete)
+- Persistent chat storage (localStorage)
+- Floating ChatGPT-style input UI
+- Document browsing interface
+- Modular component architecture
+
+---
+
+# 📂 Features
+
+## 🧩 Workspace System
+- Multiple independent chats
+- Persistent chat history
+- Rename / delete workspaces
+- Auto-save state
+
+## ⚖️ Legal Intelligence
+- Nepal Constitution chunked & embedded
+- RAG-based context retrieval
+- Legal-grounded AI responses
+
+## 📚 Document System
+- Browse legal document corpus
+- Download original PDFs
+- Ask AI directly from document context
+
+---
+
+# 🧱 Architecture
+
+User (React UI)
+   ↓
+FastAPI Backend
+   ↓
+FAISS Vector Store
+   ↓
+SentenceTransformer Embeddings
+   ↓
+Ollama (Qwen 2.5 Local LLM)
+   ↓
+RAG Response Engine
+
+---
+
+# 💻 Tech Stack
+
+## Frontend
+- React (Vite)
+- Tailwind CSS
+- React Router
+- Custom Hooks (useChat)
+
+## Backend
+- FastAPI
+- PyMuPDF
+- FAISS
+- SentenceTransformers
+- Ollama
+
+---
+
+# Backend Setup
+cd backend
+python -m venv .venv
+.\.venv\Scripts\activate   # Windows
+pip install -r requirements.txt
+uvicorn main:app --reload
+
+---
+
+# Frontend Setup
+cd frontend
+npm install
+npm run dev
+
+---
+
+# Local LLM Setup
+Install Ollama: https://ollama.ai
+ollama pull qwen2.5
+ollama run qwen2.5
+
+---
+
+# Current Status
+- RAG pipeline working
+- FAISS vector search integrated
+- Chat workspace system complete
+- Document ingestion complete
+- UI refactored
+
+---
+
+# Future Improvements
+- Docker support
+- Authentication system
+- Cloud vector DB option
+- Better legal citation         formatting
+- Multi-model switching support
+
+---
+
+# Requirements
+- Python 3.10+
+- Node.js
+- Ollama (for local LLM)

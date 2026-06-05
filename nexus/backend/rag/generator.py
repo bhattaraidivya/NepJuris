@@ -1,5 +1,6 @@
 import requests
 from rag.retriever import Retriever
+from rag.context_formatter import format_context
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL_NAME = "qwen2.5:3b"
@@ -11,42 +12,65 @@ class Generator:
         self.retriever.load()
 
     def build_prompt(self, query, contexts):
-        context_text = "\n\n".join(
-            [f"- {c['text']}" for c in contexts]
-        )
+
+        # 🔥 Structured legal context
+        context_text = format_context(contexts)
 
         prompt = f"""
-You are NyayaAI, a legal assistant for Nepal.
+You are NepJuris, a professional AI legal assistant for Nepal.
 
-Use ONLY the provided context to answer the question.
+You must answer ONLY using the provided legal context.
 
-If the answer is not in the context, say:
+If the answer is not present in the context, say:
 "I don't have enough information in the provided legal documents."
 
 ---
 
-Context:
+# LEGAL CONTEXT
 {context_text}
 
 ---
 
-Question:
+# USER QUESTION
 {query}
 
 ---
 
-Answer clearly and legally:
+# RESPONSE FORMAT
+
+📌 Answer:
+- Give a short direct answer first
+
+📖 Legal Basis:
+- MUST cite the provided source and reference 
+- Use this format: (Source Name, Reference)
+
+⚖️ Explanation:
+- Explain briefly using only retrieved legal context
+- Keep explanation concise and structured
+
+
+
+Rules:
+- NEVER use outside knowledge 
+- NEVER hallucinate laws
+- NEVER invent sections or articles 
+- NEVER write long paragraphs
+- NEVER repeat the entire context 
+- Every factual statement must be grounded in retrieved context 
+- Always include citations when possible 
+- Keep total response under 12 lines
+---
+
+Answer:
 """
         return prompt
 
     def generate(self, query):
-        # Step 1: Retrieve relevant chunks
         contexts = self.retriever.retrieve(query)
 
-        # Step 2: Build prompt
         prompt = self.build_prompt(query, contexts)
 
-        # Step 3: Call Ollama
         response = requests.post(
             OLLAMA_URL,
             json={
@@ -56,4 +80,5 @@ Answer clearly and legally:
             }
         )
 
-        return response.json()["response"]
+        data = response.json()
+        return data.get("response", "Error generating response")

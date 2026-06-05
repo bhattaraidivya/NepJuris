@@ -11,9 +11,8 @@ export default function useChat() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [currentChatId, setCurrentChatId] = useState(() => {
-    return localStorage.getItem(ACTIVE_CHAT_KEY) || null;
-  });
+  const [currentChatId, setCurrentChatId] = useState(null);
+  
 
   const [loading, setLoading] = useState(false);
 
@@ -26,34 +25,71 @@ export default function useChat() {
     (c) => c.id === currentChatId
   );
 
-  // persist chats
+  // =========================
+  // TITLE GENERATOR
+  // =========================
+  const generateTitle = (text) => {
+    const cleaned = text
+      .replace(/\n/g, " ")
+      .trim()
+      .toLowerCase();
+
+    const stopWords = [
+      "what", "why", "how", "is", "are", "the", "a", "an",
+      "explain", "tell", "me", "about", "can", "you"
+    ];
+
+    const words = cleaned
+      .split(" ")
+      .filter(word => !stopWords.includes(word))
+      .slice(0, 5);
+
+    const title = words.join(" ");
+
+    return title
+      ? title.charAt(0).toUpperCase() + title.slice(1)
+      : "New Chat";
+  };
+
+  // =========================
+  // PERSISTENCE
+  // =========================
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
   }, [conversations]);
 
-  // persist active chat
   useEffect(() => {
     if (currentChatId) {
       localStorage.setItem(ACTIVE_CHAT_KEY, currentChatId);
     }
   }, [currentChatId]);
 
-  // auto scroll
+  // =========================
+  // AUTO SCROLL
+  // =========================
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [conversations, currentChatId, loading]);
 
+  // =========================
+  // CREATE CHAT (FIXED)
+  // =========================
   const createNewChat = () => {
     const newChat = {
       id: Date.now().toString(),
-      title: "New Chat",
+      title: "New Chat", // fallback only
       messages: [],
     };
 
     setConversations((prev) => [newChat, ...prev]);
     setCurrentChatId(newChat.id);
+
+    return newChat.id;
   };
 
+  // =========================
+  // DELETE CHAT
+  // =========================
   const deleteChat = (chatId) => {
     const updated = conversations.filter(
       (chat) => chat.id !== chatId
@@ -66,6 +102,9 @@ export default function useChat() {
     }
   };
 
+  // =========================
+  // RENAME CHAT
+  // =========================
   const startRename = (chat) => {
     setEditingChatId(chat.id);
     setEditingTitle(chat.title);
@@ -91,17 +130,21 @@ export default function useChat() {
     setEditingTitle("");
   };
 
+  // =========================
+  // SEND MESSAGE (FIXED TITLE LOGIC)
+  // =========================
   const handleSend = async (text) => {
     if (!text.trim()) return;
 
     let chatId = currentChatId;
 
+    // 1. CREATE CHAT IF NONE EXISTS
     if (!chatId) {
       chatId = Date.now().toString();
 
       const newChat = {
         id: chatId,
-        title: text.slice(0, 25),
+        title: "New Chat",
         messages: [],
       };
 
@@ -111,14 +154,24 @@ export default function useChat() {
 
     const userMessage = createMessage(MessageRole.USER, text);
 
+    // 2. ADD USER MESSAGE + UPDATE TITLE HERE (IMPORTANT FIX)
     setConversations((prev) =>
-      prev.map((chat) =>
-        chat.id === chatId
-          ? { ...chat, messages: [...chat.messages, userMessage] }
-          : chat
-      )
+      prev.map((chat) => {
+        if (chat.id !== chatId) return chat;
+
+        const isFirstMessage = chat.messages.length === 0;
+
+        return {
+          ...chat,
+          messages: [...chat.messages, userMessage],
+          title: isFirstMessage
+            ? generateTitle(text)
+            : chat.title,
+        };
+      })
     );
 
+    // 3. TYPING INDICATOR
     const typingMessage = {
       id: "typing",
       role: MessageRole.AI,
@@ -129,7 +182,10 @@ export default function useChat() {
     setConversations((prev) =>
       prev.map((chat) =>
         chat.id === chatId
-          ? { ...chat, messages: [...chat.messages, typingMessage] }
+          ? {
+              ...chat,
+              messages: [...chat.messages, typingMessage],
+            }
           : chat
       )
     );
@@ -156,6 +212,7 @@ export default function useChat() {
             : chat
         )
       );
+
     } catch (err) {
       setConversations((prev) =>
         prev.map((chat) =>

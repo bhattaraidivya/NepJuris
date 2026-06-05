@@ -8,7 +8,7 @@
     "category": "constitution",
     "extraction_type": "text",
     "source": "official",
-    "status": "pending"
+    "status": "indexed"
   },
   {
     "id": "doc_002",
@@ -19,7 +19,7 @@
     "category": "civil_code",
     "extraction_type": "text",
     "source": "official",
-    "status": "pending"
+    "status": "indexed"
   },
   {
     "id": "doc_003",
@@ -30,6 +30,28 @@
     "category": "case_law",
     "extraction_type": "text",
     "source": "court",
-    "status": "pending"
+    "status": "indexed"
+  },
+  {
+    "id": "doc_004",
+    "name": "Criminal Law of Nepal",
+    "category": "law",
+    "language": "en",
+    "type": "pdf",
+    "status": "indexed",
+    "extraction_type": "text",
+    "source": "official",
+    "file_path": "data/raw/criminal_Code_en.pdf"
+  },
+  {
+    "id": "doc_005",
+    "name": "Cyber Law of Nepal",
+    "category": "law",
+    "language": "en",
+    "type": "pdf",
+    "status": "indexed",
+    "extraction_type": "text",
+    "source": "official",
+    "file_path": "data/raw/cybercrime_en.pdf"
   }
 ]

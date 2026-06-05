@@ -14,15 +14,28 @@ export default function Sidebar({
   return (
     <div className="w-64 h-full border-r border-zinc-800 flex flex-col">
 
-      <div className="p-3 border-b border-zinc-800">
+      {/* HEADER */}
+      <div className="p-3 border-b border-zinc-800 space-y-2">
+
+        {/* BACK BUTTON */}
+        <button
+          onClick={() => window.history.back()}
+          className="text-xs text-zinc-400 hover:text-white transition"
+        >
+          ← Back
+        </button>
+
+        {/* NEW CHAT */}
         <button
           onClick={createNewChat}
           className="w-full bg-white text-black py-2 rounded-lg text-sm font-medium"
         >
-           New Chat
+          New Chat
         </button>
+
       </div>
 
+      {/* CHAT LIST */}
       <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
 
         {conversations.length === 0 && (

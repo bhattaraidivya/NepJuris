@@ -2,28 +2,39 @@
 
 NyayaAI is a full-stack AI-powered legal assistant designed to help users understand Nepali laws in simple language using a Retrieval-Augmented Generation (RAG) system.
 
+It combines document embeddings, FAISS vector search, and a local LLM (Ollama) to deliver context-aware legal responses.
+
 ---
 
 ## 🚀 Live Features
 
-### 🧠 AI Chat System
+### 🧠 AI Chat System (RAG-based)
 - Ask legal questions in natural language
-- AI responds using relevant legal document chunks
-- Context-aware responses using RAG pipeline
+- Answers grounded in Nepali legal documents
+- Retrieval-Augmented Generation (RAG) pipeline
+- FAISS-based semantic search for relevant context
+- Local LLM (Ollama - Qwen 2.5) for response generation
+
+---
 
 ### 💬 Chat UI (React)
 - ChatGPT-style interface
 - User / AI message bubbles
 - Sidebar with chat history
 - Create, switch, rename, and delete conversations
-- Persistent chat storage (localStorage)
+- Typing indicator (AI response loading state)
+- Persistent chat storage using localStorage
+- Modular component-based architecture
 
-### ⚙️ Backend (FastAPI)
+---
+
+### ⚙️ Backend (FastAPI + RAG Pipeline)
 - `/chat` endpoint for AI responses
-- Document loader system
-- Text chunking + embedding generation
-- Cosine similarity-based retrieval system
-- Context-based response generation
+- Document ingestion pipeline (PDF → text extraction)
+- Text chunking system for semantic segmentation
+- SentenceTransformer embeddings generation
+- FAISS vector database for similarity search
+- Context-aware response generation using LLM
 
 ---
 
@@ -39,11 +50,13 @@ NyayaAI is a full-stack AI-powered legal assistant designed to help users unders
 - FastAPI
 - Python
 - Sentence Transformers
+- FAISS (Vector Database)
 - NumPy
 
 ### AI System
 - Retrieval-Augmented Generation (RAG)
-- Vector similarity search
+- Local LLM via Ollama (Qwen 2.5 3B)
+- Semantic vector search
 - Embedding-based document retrieval
 
 ---
@@ -52,13 +65,14 @@ NyayaAI is a full-stack AI-powered legal assistant designed to help users unders
 
 User Query  
 → React Chat UI  
-→ FastAPI `/chat`  
-→ Embedding Generation  
-→ Vector Similarity Search  
-→ Top Legal Chunks Retrieved  
-→ AI Response Generation  
+→ FastAPI `/chat` endpoint  
+→ Query Embedding Generation  
+→ FAISS Vector Similarity Search  
+→ Relevant Legal Chunks Retrieved  
+→ Context + Query sent to LLM (Ollama)  
+→ AI Response Generated  
 → Returned to Frontend  
+→ UI updates chat window  
 
 ---
-
 

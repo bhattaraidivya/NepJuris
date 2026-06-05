@@ -1,9 +1,8 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
-
-from rag.generator import Generator
 from fastapi.middleware.cors import CORSMiddleware
 
+from routes.chat import router as chat_router
+from routes.documents import router as docs_router
 
 
 app = FastAPI()
@@ -16,27 +15,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize generator ONCE (important)
-generator = Generator()
-generator.retriever.load()
-
-
-# Request schema
-class ChatRequest(BaseModel):
-    message: str
-
-
-@app.post("/chat")
-def chat(request: ChatRequest):
-    query = request.message
-
-    try:
-        response = generator.generate(query)
-        return {
-            "response": response
-        }
-
-    except Exception as e:
-        return {
-            "error": str(e)
-        }
+# register routes
+app.include_router(chat_router)
+app.include_router(docs_router)
