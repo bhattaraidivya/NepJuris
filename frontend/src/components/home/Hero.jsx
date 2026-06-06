@@ -7,11 +7,12 @@ import { Link } from "react-router-dom";
 import hero1 from "../../assets/hero1.jpg";
 import hero2 from "../../assets/hero2.jpg";
 import hero3 from "../../assets/hero3.jpg";
+import hero4 from "../../assets/hero4.jpg";
 
 export default function Hero() {
 
   // ================= HERO IMAGES =================
-  const images = [hero1, hero2, hero3];
+  const images = [hero1, hero2, hero3, hero4];
 
   const [currentImage, setCurrentImage] = useState(0);
 
@@ -48,7 +49,7 @@ export default function Hero() {
         ))}
 
         {/* DARK OVERLAY */}
-        <div className="absolute inset-0 bg-black/60" />
+        <div className="absolute inset-0 bg-black/40" />
 
         {/* COLOR GLOW */}
         <div className="absolute inset-0 bg-linear-to-br from-zinc-950/80 via-black/60 to-zinc-900/40" />
