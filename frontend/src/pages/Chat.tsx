@@ -7,13 +7,8 @@ export default function Chat() {
 
   return (
     <div className="h-screen flex bg-zinc-950 text-white overflow-hidden">
-
-      {/* SIDEBAR (fixed width) */}
       <Sidebar {...chat} />
-
-      {/* CHAT AREA */}
       <ChatArea {...chat} />
-
     </div>
   );
 }

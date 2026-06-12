@@ -1,10 +1,15 @@
 import { useState } from "react";
 
-export default function InputBox({ onSend }) {
-  const [text, setText] = useState("");
+type Props = {
+  onSend: (text: string) => void;
+  loading?: boolean;
+};
+
+export default function InputBox({ onSend, loading }: Props) {
+  const [text, setText] = useState<string>("");
 
   const handleSend = () => {
-    if (!text.trim()) return;
+    if (!text.trim() || loading) return;
     onSend(text);
     setText("");
   };
@@ -17,12 +22,15 @@ export default function InputBox({ onSend }) {
         placeholder="Ask about Nepal law..."
         value={text}
         onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && handleSend()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") handleSend();
+        }}
       />
 
       <button
         onClick={handleSend}
-        className="bg-white text-black px-4 py-2 rounded-xl text-sm hover:opacity-90 transition"
+        disabled={loading}
+        className="bg-white text-black px-4 py-2 rounded-xl text-sm hover:opacity-90 transition disabled:opacity-50"
       >
         Send
       </button>

@@ -5,7 +5,7 @@ import Transition from "../components/home/CorpusPreview";
 import Features from "../components/home/Features";
 import Trust from "../components/home/Trust";
 import Footer from "../components/layout/Footer";
-import Message from "../components/chat/Message";
+
 import CorpusPreview from "../components/home/CorpusPreview";
 
 
@@ -19,7 +19,7 @@ export default function Home() {
       <Features />
       <Trust />
       <Footer />
-      <Message />
+     
 
     </div>
   );

@@ -1,12 +1,19 @@
 import ChatBox from "./ChatBox";
 import InputBox from "./InputBox";
+import type { UseChatReturn } from "../../types/chat.types";
+
+
+type ChatAreaProps = Pick<
+  UseChatReturn,
+  "currentChat" | "loading" | "bottomRef" | "handleSend"
+>;
 
 export default function ChatArea({
   currentChat,
   loading,
   bottomRef,
   handleSend,
-}) {
+}: ChatAreaProps) {
   return (
     <div className="flex-1 relative flex flex-col overflow-hidden">
 

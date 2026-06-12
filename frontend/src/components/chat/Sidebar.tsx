@@ -1,3 +1,20 @@
+import type { UseChatReturn, Chat } from "../../types/chat.types";
+
+type SidebarProps = Pick<
+  UseChatReturn,
+  | "conversations"
+  | "currentChatId"
+  | "setCurrentChatId"
+  | "createNewChat"
+  | "deleteChat"
+  | "editingChatId"
+  | "editingTitle"
+  | "setEditingTitle"
+  | "startRename"
+  | "saveRename"
+  | "cancelRename"
+>;
+
 export default function Sidebar({
   conversations,
   currentChatId,
@@ -10,7 +27,7 @@ export default function Sidebar({
   startRename,
   saveRename,
   cancelRename,
-}) {
+}: SidebarProps) {
   return (
     <div className="w-64 h-full border-r border-zinc-800 flex flex-col">
 

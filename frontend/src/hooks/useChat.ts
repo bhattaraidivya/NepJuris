@@ -1,47 +1,68 @@
 import { useState, useEffect, useRef } from "react";
 import { sendMessage } from "../services/api";
-import { MessageRole, createMessage } from "../core/contracts";
+import { MessageRole, MessageType, createMessage } from "../core/contracts";
+import type { ChatMessage, UseChatReturn } from "../types/chat.types";
+
+type Chat = {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+};
 
 const STORAGE_KEY = "nyayaai_conversations";
 const ACTIVE_CHAT_KEY = "nyayaai_active_chat";
 
-export default function useChat() {
-  const [conversations, setConversations] = useState(() => {
+export default function useChat(): UseChatReturn {
+  const [conversations, setConversations] = useState<Chat[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : [];
+    try {
+      return saved ? (JSON.parse(saved) as Chat[]) : [];
+    } catch {
+      return [];
+    }
   });
 
-  const [currentChatId, setCurrentChatId] = useState(null);
-  
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const [loading, setLoading] = useState(false);
+  const [editingChatId, setEditingChatId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState<string>("");
 
-  const [editingChatId, setEditingChatId] = useState(null);
-  const [editingTitle, setEditingTitle] = useState("");
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  const bottomRef = useRef(null);
-
-  const currentChat = conversations.find(
+  const currentChat: Chat | undefined = conversations.find(
     (c) => c.id === currentChatId
   );
 
   // =========================
   // TITLE GENERATOR
   // =========================
-  const generateTitle = (text) => {
+  const generateTitle = (text: string): string => {
     const cleaned = text
       .replace(/\n/g, " ")
       .trim()
       .toLowerCase();
 
     const stopWords = [
-      "what", "why", "how", "is", "are", "the", "a", "an",
-      "explain", "tell", "me", "about", "can", "you"
+      "what",
+      "why",
+      "how",
+      "is",
+      "are",
+      "the",
+      "a",
+      "an",
+      "explain",
+      "tell",
+      "me",
+      "about",
+      "can",
+      "you",
     ];
 
     const words = cleaned
       .split(" ")
-      .filter(word => !stopWords.includes(word))
+      .filter((word) => !stopWords.includes(word))
       .slice(0, 5);
 
     const title = words.join(" ");
@@ -72,12 +93,12 @@ export default function useChat() {
   }, [conversations, currentChatId, loading]);
 
   // =========================
-  // CREATE CHAT (FIXED)
+  // CREATE CHAT
   // =========================
-  const createNewChat = () => {
-    const newChat = {
+  const createNewChat = (): string => {
+    const newChat: Chat = {
       id: Date.now().toString(),
-      title: "New Chat", // fallback only
+      title: "New Chat",
       messages: [],
     };
 
@@ -90,27 +111,25 @@ export default function useChat() {
   // =========================
   // DELETE CHAT
   // =========================
-  const deleteChat = (chatId) => {
-    const updated = conversations.filter(
-      (chat) => chat.id !== chatId
-    );
+  const deleteChat = (chatId: string): void => {
+    const updated = conversations.filter((chat) => chat.id !== chatId);
 
     setConversations(updated);
 
     if (chatId === currentChatId) {
-      setCurrentChatId(updated.length ? updated[0].id : null);
+     setCurrentChatId(updated[0]?.id ?? null);
     }
   };
 
   // =========================
   // RENAME CHAT
   // =========================
-  const startRename = (chat) => {
+  const startRename = (chat: Chat): void => {
     setEditingChatId(chat.id);
     setEditingTitle(chat.title);
   };
 
-  const saveRename = () => {
+  const saveRename = (): void => {
     if (!editingTitle.trim()) return;
 
     setConversations((prev) =>
@@ -125,24 +144,24 @@ export default function useChat() {
     setEditingTitle("");
   };
 
-  const cancelRename = () => {
+  const cancelRename = (): void => {
     setEditingChatId(null);
     setEditingTitle("");
   };
 
   // =========================
-  // SEND MESSAGE (FIXED TITLE LOGIC)
+  // SEND MESSAGE
   // =========================
-  const handleSend = async (text) => {
+  const handleSend = async (text: string): Promise<void> => {
     if (!text.trim()) return;
 
     let chatId = currentChatId;
 
-    // 1. CREATE CHAT IF NONE EXISTS
+    // CREATE CHAT IF NONE EXISTS
     if (!chatId) {
       chatId = Date.now().toString();
 
-      const newChat = {
+      const newChat: Chat = {
         id: chatId,
         title: "New Chat",
         messages: [],
@@ -152,9 +171,13 @@ export default function useChat() {
       setCurrentChatId(chatId);
     }
 
-    const userMessage = createMessage(MessageRole.USER, text);
+    const userMessage = createMessage(
+      MessageRole.USER,
+      text,
+      MessageType.TEXT
+    );
 
-    // 2. ADD USER MESSAGE + UPDATE TITLE HERE (IMPORTANT FIX)
+    // ADD USER MESSAGE + TITLE UPDATE
     setConversations((prev) =>
       prev.map((chat) => {
         if (chat.id !== chatId) return chat;
@@ -171,13 +194,12 @@ export default function useChat() {
       })
     );
 
-    // 3. TYPING INDICATOR
-    const typingMessage = {
-      id: "typing",
-      role: MessageRole.AI,
-      type: "typing",
-      text: "",
-    };
+    // TYPING MESSAGE
+    const typingMessage = createMessage(
+      MessageRole.AI,
+      "",
+      MessageType.TYPING
+    );
 
     setConversations((prev) =>
       prev.map((chat) =>
@@ -197,7 +219,8 @@ export default function useChat() {
 
       const aiMessage = createMessage(
         MessageRole.AI,
-        response
+        response.response,
+        MessageType.TEXT
       );
 
       setConversations((prev) =>
@@ -206,13 +229,12 @@ export default function useChat() {
             ? {
                 ...chat,
                 messages: chat.messages
-                  .filter((m) => m.type !== "typing")
+                  .filter((m) => m.type !== MessageType.TYPING)
                   .concat(aiMessage),
               }
             : chat
         )
       );
-
     } catch (err) {
       setConversations((prev) =>
         prev.map((chat) =>
@@ -220,7 +242,7 @@ export default function useChat() {
             ? {
                 ...chat,
                 messages: chat.messages
-                  .filter((m) => m.type !== "typing")
+                  .filter((m) => m.type !== MessageType.TYPING)
                   .concat(
                     createMessage(
                       MessageRole.AI,
