@@ -1,263 +1,184 @@
-# 📘 NepJuris — AI Legal Intelligence Platform
+# NepJuris
 
-> A full-stack AI legal reasoning system for Nepali law powered by Retrieval-Augmented Generation (RAG) and a local LLM.
+**An offline-first, retrieval-grounded AI legal intelligence system for Nepali law.**
 
----
+NepJuris is not a chatbot. It is a RAG-powered legal reasoning engine that retrieves context from a structured corpus of Nepali legal documents and generates responses grounded strictly in that retrieved content — no hallucinated statutes, no invented case law.
 
-# ⚙️ Overview
-
-NepJuris is a full-stack AI-powered legal intelligence workspace, designed to transform Nepalese legal documents into an interactive, searchable, and conversational knowledge system.
-
-It is not a chatbot — it is a **retrieval-grounded legal reasoning platform**.
-
-Users can:
-
-* Query Nepali legal documents using natural language
-* Interact with a RAG-powered AI system
-* Browse a structured legal corpus
-* Manage multiple persistent chat workspaces
-* Receive responses grounded in retrieved legal context
+Built entirely with local infrastructure. No external APIs. No cloud dependency. Runs on a single `docker compose up`.
 
 ---
 
-# 🧠 Core System Architecture
+## The Problem
 
-## Backend (FastAPI)
+Nepal's legal system is inaccessible in practice. Primary legal documents — the Constitution, Civil Code, Criminal Code, Cyber Law, and Supreme Court decisions — exist as dense English PDFs scattered across government portals. For a law student, independent researcher, or citizen trying to understand their rights, there is no reliable way to query this corpus and get a grounded, citable answer.
 
-* RESTful API architecture
-* PDF ingestion using PyMuPDF
-* Text chunking pipeline for legal documents
-* SentenceTransformer embeddings
-* FAISS vector similarity search
-* RAG-based retrieval pipeline
-* Local LLM inference via Ollama (Qwen 2.5)
+General-purpose AI tools make this worse: they hallucinate statute numbers, invent provisions, and cite cases that don't exist. The problem isn't lack of AI — it's lack of *retrieval-grounded* AI trained on the actual documents.
+
+NepJuris solves this by combining semantic retrieval over the real legal corpus with local LLM inference, enforcing a strict no-hallucination constraint at the prompt level.
 
 ---
 
-## Frontend (React + Vite + TypeScript Hybrid)
+## Corpus
 
-* Workspace-based multi-chat system (not single-session chatbot)
-* Persistent chat state using localStorage
-* Multi-chat sidebar (create / rename / delete workspaces)
-* ChatGPT-style floating input interface
-* Document browsing system for legal corpus
-* Modular component architecture (chat / home / docs / UI separation)
-* TypeScript migration for core chat system (hooks, state, contracts)
+NepJuris currently indexes the following documents (English PDFs):
 
----
+| Document | Type |
+|---|---|
+| Constitution of Nepal 2015 | Constitutional Law |
+| Civil Code of Nepal | Substantive Civil Law |
+| Criminal Code of Nepal | Substantive Criminal Law |
+| Cyber Law of Nepal | Regulatory / Digital Law |
+| Supreme Court Landmark Decisions | Case Law / Precedent |
 
-# 📂 Key Features
-
-## 🧩 Workspace Chat System
-
-* Multiple independent chat sessions
-* Persistent conversation history
-* Rename and delete workspaces
-* Automatic state persistence across sessions
+All documents are chunked, embedded, and indexed into a FAISS vector store at ingestion time.
 
 ---
 
-## ⚖️ Legal Intelligence (RAG System)
-
-* Nepal Constitution and legal corpus chunked and embedded
-* FAISS-powered semantic retrieval
-* Context-aware AI responses grounded in retrieved documents
-* Local LLM inference (no external API dependency)
-
----
-
-## 📚 Document Intelligence System
-
-* Structured legal document browser
-* Corpus-based navigation
-* Direct AI interaction with legal documents
-* Metadata-aware document organization
-
----
-
-## 🎨 Frontend Experience
-
-* Dark, cinematic UI inspired by modern AI tools
-* Framer Motion animations for smooth interactions
-* Responsive layout system
-* Reusable UI primitives (Button, Card, Input, etc.)
-* Clean separation of domain logic and UI components
-
----
-
-# 🧱 System Architecture
+## Architecture
 
 ```
-User (React Frontend)
-        ↓
-FastAPI Backend
-        ↓
-FAISS Vector Database
-        ↓
+User Query (Browser)
+      ↓
+React SPA — Nginx Container
+      ↓
+FastAPI Backend — RAG Engine
+      ↓
+FAISS Vector Store (local)
+      ↓
 SentenceTransformer Embeddings
-        ↓
-Context Retrieval Layer
-        ↓
-Ollama (Qwen 2.5 Local LLM)
-        ↓
-RAG Response Generator
-        ↓
-Grounded Legal Answer
+      ↓
+Context Formatter + Prompt Builder
+      ↓
+Ollama — LLaMA 3 8B (local inference)
+      ↓
+Retrieval-Grounded Legal Response
 ```
 
----
-
-# 💻 Tech Stack
-
-## Frontend
-
-* React (Vite)
-* TypeScript (partial migration for core system)
-* Tailwind CSS
-* React Router
-* Framer Motion
-* Custom Hooks (useChat architecture)
-
-## Backend
-
-* FastAPI
-* PyMuPDF
-* FAISS
-* SentenceTransformers
-* Ollama (local inference)
+Every response is sourced from retrieved document chunks. The prompt explicitly prohibits the model from drawing on outside knowledge or fabricating legal references.
 
 ---
 
-# 🧠 TypeScript Architecture (Current State)
+## Stack
 
-NepJuris uses a **hybrid TypeScript migration strategy**:
+**Frontend**
+- React + Vite (SPA, served via Nginx)
+- TypeScript — core chat domain, API contracts, state types
+- Tailwind CSS + Framer Motion
+- Multi-workspace chat system with persistent localStorage state
 
-### ✔ Fully Typed
+**Backend**
+- FastAPI — REST API + RAG pipeline orchestration
+- PyMuPDF — PDF ingestion and text extraction
+- SentenceTransformers — document and query embedding
+- FAISS — vector similarity search
+- Prompt engineering layer — strict legal grounding constraints
 
-* Chat state management (useChat)
-* API layer (sendMessage)
-* Core contracts (runtime + type system separation)
-* Chat domain models
+**Inference**
+- Ollama running LLaMA 3 8B — fully local, no external API calls
 
-### ✔ Partially Typed (Intentional)
-
-* UI components (stateless presentational components)
-* Pages (light typing only)
-
-### ✔ Design Principle
-
-> Type safety is applied where data integrity matters (core + API), not where UI is deterministic.
+**Infrastructure**
+- Docker Compose — four-service orchestration (frontend, backend, ollama, nginx)
+- Nginx — reverse proxy, `/api/*` → FastAPI, `/` → React SPA
+- Internal Docker network — all inter-service communication contained
 
 ---
 
-# 📁 Project Structure
+## Key Engineering Decisions
+
+**Why FAISS over a managed vector DB?**
+NepJuris is designed to run entirely offline. A managed vector store (Pinecone, Weaviate) would require outbound network access, breaking the offline-first constraint. FAISS runs in-process with the FastAPI backend.
+
+**Why local LLM (Ollama) over OpenAI/Anthropic API?**
+Legal documents contain sensitive queries. Sending them to an external API violates the privacy-first design principle. Ollama runs LLaMA 3 8B entirely inside the Docker network — no query ever leaves the machine.
+
+**Why strict retrieval grounding?**
+Legal AI that hallucinates is worse than no legal AI. The system prompt explicitly instructs the model to refuse to answer if retrieved context is insufficient, rather than generate a plausible-sounding but unsupported response.
+
+**TypeScript migration strategy**
+TypeScript is applied selectively to data integrity layers: API contracts (`api.ts`), chat state (`chat.types.ts`), and the single source of truth (`contracts.ts`). Pure UI rendering components remain in JSX — typed where it prevents bugs, not for coverage metrics.
+
+---
+
+## Project Structure
 
 ```
-src/
-├── components/
-│   ├── chat/
-│   ├── home/
-│   ├── docs/
-│   ├── layout/
-│   └── ui/
+nepjuris/
+├── docker-compose.yml
+├── nginx.conf
+├── frontend/
+│   ├── Dockerfile
+│   ├── .env
+│   ├── dist/                   # production build (Vite output, served by Nginx)
+│   └── src/
+│       ├── pages/          # Home.jsx · Chat.tsx · Docs.jsx
+│       ├── components/
+│       │   ├── chat/       # TypeScript-migrated core system
+│       │   ├── home/
+│       │   ├── docs/
+│       │   ├── layout/
+│       │   └── ui/
+│       ├── hooks/
+│       │   └── useChat.ts
+│       ├── services/
+│       │   └── api.ts
+│       ├── core/
+│       │   └── contracts.ts
+│       └── types/
+│           └── chat.types.ts
 │
-├── pages/
-│   ├── Chat.tsx
-│   ├── Home.jsx
-│   └── Docs.jsx
-│
-├── hooks/
-│   └── useChat.ts
-│
-├── services/
-│   └── api.ts
-│
-├── core/
-│   └── contracts.ts
-│
-├── types/
-│   └── chat.types.ts
-│
-├── design/
-└── assets/
+└── backend/
+    ├── routes/
+    │   ├── chat.py
+    │   └── documents.py
+    ├── services/
+    │   └── chat_service.py
+    ├── rag/
+    │   ├── retriever.py
+    │   ├── generator.py
+    │   ├── context_formatter.py
+    │   ├── embedder.py
+    │   └── vector_store.py
+    ├── pipeline/
+    │   ├── extractor.py
+    │   ├── chunker.py
+    │   └── ingest.py
+    └── main.py
+    ├── Dockerfile
+    ├── .env
 ```
 
 ---
 
-# 🖥 Backend Architecture
+## Running Locally
 
-```
-backend/
-├── routes/
-├── services/
-├── pipeline/
-│   ├── extractor.py
-│   ├── chunker.py
-│   └── ingest.py
-├── rag/
-|   |__context_formatter.py
-|   |
-│   ├── embedder.py
-│   ├── retriever.py
-│   ├── vector_store.py
-│   └── generator.py
-└── main.py
+**Prerequisites:** Docker + Docker Compose
+
+```bash
+git clone https://github.com/bhattaridivya/nepjuris
+cd nepjuris
+docker compose up --build
 ```
 
----
+The system automatically provisions all four containers and wires them over an internal Docker network. Open `http://localhost` when startup completes.
 
-# 🧪 Current Status
-
-* RAG pipeline fully functional
-* FAISS vector search integrated
-* Local LLM inference working (Ollama)
-* Multi-chat workspace system complete
-* Document ingestion pipeline complete
-* Frontend architecture modularized
-* TypeScript migration completed for core system
+To ingest documents, place PDFs in the designated corpus directory and trigger the ingestion pipeline via the `/api/ingest` endpoint or the document management UI.
 
 ---
 
-# 🖼 Assets / Screenshots
+## Features
 
-> UI screenshots demonstrating the system are available in:
-
-```
-/assets
-```
-
-Includes:
-
-* Chat interface
-* Document browser
-* Home UI workflow
-* RAG response examples
+- **Multi-workspace chat** — independent sessions, each with persistent history
+- **Retrieval-grounded responses** — every answer sourced from actual document chunks
+- **Document browser** — metadata-aware corpus explorer with direct doc-to-chat interaction
+- **No-hallucination enforcement** — prompt-level constraint refusing unsupported answers
+- **Fully offline** — zero outbound network dependency after initial model pull
 
 ---
 
-# 🚀 Future Improvements
+## What This Is (and Isn't)
 
-* Dockerized deployment setup
-* Authentication system
-* Cloud vector database support
-* Improved citation visualization in UI
-* Multi-model switching support
-* Advanced legal reasoning pipelines
+NepJuris is a demonstration of production-grade RAG system design applied to a real-world legal accessibility problem in Nepal. It is not a substitute for legal counsel. It is a research and reference tool that grounds AI responses in primary legal sources.
 
 ---
 
-# 🎯 What This Project Demonstrates
-
-NepJuris demonstrates production-level AI engineering across multiple domains:
-
-* Full-stack AI system design
-* RAG architecture implementation
-* Vector database integration (FAISS)
-* Local LLM inference systems
-* Scalable frontend architecture
-* Type-safe state management (TypeScript)
-* Real-world legal domain application
-
----
-
-> NepJuris represents the evolution of a chatbot into a structured legal intelligence system — combining retrieval, reasoning, and interface design into a unified AI workspace.
+*Built by [Divya Bhattarai]*
