@@ -1,19 +1,34 @@
+# =========================
+# TEXT FILE NORMALIZATION
+# =========================
 * text=auto
 
-# Normalize all text files
-* text=auto
-
-# Force consistent LF endings for code
+# Force LF for all code files (important for cross-platform dev)
 *.js text eol=lf
 *.jsx text eol=lf
 *.ts text eol=lf
 *.tsx text eol=lf
+*.py text eol=lf
 *.json text eol=lf
 *.md text eol=lf
 *.css text eol=lf
+*.html text eol=lf
 
-# Keep binary files untouched
+# =========================
+# BINARY FILES (DO NOT NORMALIZE)
+# =========================
 *.png binary
 *.jpg binary
 *.jpeg binary
+*.gif binary
 *.pdf binary
+*.woff binary
+*.woff2 binary
+
+# =========================
+# OPTIONAL (GOOD PRACTICE)
+# =========================
+# Prevent large vendor diffs
+node_modules/ linguist-vendored
+dist/ linguist-generated
+build/ linguist-generated

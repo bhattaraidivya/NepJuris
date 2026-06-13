@@ -1,20 +1,68 @@
-# Python virtual environments
-venv/
-.venv/
+# =========================
+# FAISS / embeddings / processed data
+# =========================
+*.faiss
+*.index
+*.npy
+*.pkl
 
-# Python cache
-__pycache__/
-*.pyc
+# AI model caches
+.cache/
+models/
 
-# Node modules
+# Ollama / local AI artifacts
+ollama/
+
+# Processed legal data
+backend/data/processed/
+backend/data/chunks/
+backend/data/embeddings/
+
+# =========================
+# OS files
+# =========================
+Thumbs.db
+.DS_Store
+
+# =========================
+# Node / Frontend
+# =========================
 node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
 
-# Environment variables
+# Vite / frontend env
+frontend/.env
 .env
 
-# Build output
-dist/
-build/
+# =========================
+# Python / Backend
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
-# IDE
+backend/.venv/
+.venv/
+
+# pip
+pip-log.txt
+
+# =========================
+# Docker
+# =========================
+*.log
+docker-compose.override.yml
+
+# =========================
+# IDE / Editor
+# =========================
 .vscode/
+.idea/
+
+# =========================
+# Keep local config safe
+# =========================
+*.env.local

@@ -1,9 +1,14 @@
+import os
+
 import requests
 from rag.retriever import Retriever
 from rag.context_formatter import format_context
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL_NAME = "qwen2.5:3b"
+OLLAMA_URL = os.getenv(
+    "OLLAMA_URL",
+    "http://ollama:11434/api/generate"
+)
+MODEL_NAME = "llama3"
 
 
 class Generator:

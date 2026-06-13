@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DocumentCard from "../components/docs/DocumentCard";
 
-const BASE_URL = "http://127.0.0.1:8000";
+const BASE_URL = "/api";
 
 export default function Docs() {
   const [documents, setDocuments] = useState([]);

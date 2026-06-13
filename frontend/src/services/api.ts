@@ -1,6 +1,6 @@
 import { normalizeChatResponse } from "../core/apicontract";
 import type { ChatResponse } from "../types/chat.types";
-const BASE_URL = "http://127.0.0.1:8000";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ; // Proxy is set up in package.json to forward to backend
 
 export async function sendMessage(
   message: string

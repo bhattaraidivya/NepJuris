@@ -8,6 +8,8 @@ type MessageProps = {
 export default function Message({
   message,
 }: MessageProps) {
+  if (!message) return null;
+
   const isUser =
     message.role === MessageRole.USER;
 

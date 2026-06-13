@@ -1,254 +1,144 @@
-# 🇳🇵 NepJuris — AI Legal Intelligence Platform
+# NepJuris — Project State
 
-> A production-grade, full-stack AI legal reasoning system for Nepal.
-> Built with RAG, FAISS, local LLM inference, and a premium React frontend.
-
----
-
-## 🟢 Project Status: Complete
-
-| Layer | Status |
-|---|---|
-| Frontend | ✅ Complete |
-| Backend | ✅ Complete |
-| RAG Pipeline | ✅ Active |
-| AI System | ✅ Functional |
-| Design System | ✅ Finalized |
+> Internal engineering reference. Tracks what is built, what works, what is intentionally deferred, and what comes next.
 
 ---
 
-## 🧠 What NepJuris Is
+## Current Status: Fully Operational
 
-NepJuris is a full-stack AI-powered legal intelligence platform for Nepal, built on Retrieval-Augmented Generation (RAG).
+All core systems are containerized and running end-to-end. A single `docker compose up --build` provisions the full stack.
 
-It transforms Nepalese legal documents — constitutions, civil codes, criminal procedure acts — into a searchable, explainable, and conversational legal intelligence system using semantic retrieval, vector databases, and local LLM reasoning.
-
-It is not a chatbot. It is a legal reasoning platform.
+| Layer | Status | Notes |
+|---|---|---|
+| React Frontend (Vite) | ✅ Operational | Served via Nginx container |
+| FastAPI Backend | ✅ Operational | Dockerized, all routes responding |
+| RAG Pipeline | ✅ Operational | Retrieval → context → generation working |
+| FAISS Vector Store | ✅ Operational | Indexed, stable retrieval |
+| Ollama (LLaMA 3 8B) | ✅ Operational | Local inference via Docker network |
+| Nginx Reverse Proxy | ✅ Configured | `/api/*` → backend, `/` → SPA |
+| Multi-workspace Chat | ✅ Operational | Persistent state via localStorage |
+| Document Browser | ✅ Operational | Corpus browsable, doc-to-chat linked |
+| TypeScript Migration | 🔄 Partial | Core domain complete, UI pages intentionally deferred |
+| Performance Metrics | ⏳ Not yet measured | Benchmarking planned |
 
 ---
 
-## 🏗 System Architecture
+## Corpus
 
-### Frontend — React + Vite
+**Indexed documents (English PDFs):**
+
+- Constitution of Nepal 2015
+- Civil Code of Nepal
+- Criminal Code of Nepal
+- Cyber Law of Nepal
+- Supreme Court Landmark Decisions
+
+All five documents are chunked, embedded via SentenceTransformers, and indexed in the FAISS vector store.
+
+**Chunking strategy:** Chunk size and overlap not yet formally benchmarked. Current values are functional but unoptimized — this is a known gap.
+
+---
+
+## RAG Pipeline — Implementation Detail
 
 ```
-src/
-├── pages/
-│   ├── Home.jsx
-│   ├── Chat.jsx
-│   └── Docs.jsx
-│
-├── components/
-│   ├── chat/
-│   │   ├── Sidebar.jsx
-│   │   ├── ChatArea.jsx
-│   │   ├── ChatBox.jsx
-│   │   ├── Message.jsx
-│   │   └── InputBox.jsx
-│   │
-│   ├── home/
-│   │   ├── Hero.jsx
-│   │   ├── Workflow.jsx
-│   │   ├── Features.jsx
-│   │   └── CorpusPreview.jsx
-│   │
-│   ├── docs/
-│   │   └── DocumentCard.jsx
-│   │
-│   ├── layout/
-│   │   ├── Navbar.jsx
-│   │   └── Footer.jsx
-│   │
-│   └── ui/
-│       ├── Button.jsx
-│       ├── Card.jsx
-│       ├── Badge.jsx
-│       ├── Input.jsx
-│       ├── Section.jsx
-│       └── Container.jsx
-│
-├── hooks/
-│   └── useChat.js
-│
-├── services/
-│   └── api.js
-│
-├── design/
-│   ├── colors.js
-│   ├── typography.js
-│   ├── spacing.js
-│   └── layout.js
-│
-└── core/
-    ├── contracts.js
-    └── apiContract.js
+Ingest:
+  PDF → PyMuPDF extraction → text chunker → SentenceTransformer embedding → FAISS index
+
+Query:
+  User input → embedding → FAISS top-k retrieval → context formatter →
+  prompt builder (with legal grounding constraints) → Ollama /api/generate →
+  structured response
 ```
 
-### Backend — FastAPI
+**Grounding enforcement:** The system prompt instructs the model to answer only from retrieved context and to explicitly decline when context is insufficient. This is enforced at the prompt level, not the model level — it is strong but not absolute.
 
-```
-backend/
-├── main.py
-│
-├── routes/
-│   ├── chat.py
-│   └── documents.py
-│
-├── services/
-│   ├── chat_service.py
-│   └── document_service.py
-│
-├── pipeline/
-│   ├── extractor.py
-│   ├── chunker.py
-│   └── ingest.py
-│
-├── rag/
-│   ├── embedder.py
-│   ├── vector_store.py
-│   ├── retriever.py
-│   └── generator.py
-│
-└── data/
-    ├── raw/
-    ├── processed/
-    ├── chunks/
-    ├── embeddings/
-    └── data_catalog.json
-```
+**Model:** LLaMA 3 8B via Ollama. Chosen for its balance of instruction-following quality and hardware accessibility (runs on consumer GPU or CPU-only).
 
 ---
 
-## ⚙ Backend — 3-Layer Architecture
+## Docker Architecture
 
-### 1. Routes Layer
-HTTP endpoints, request handling, response serialization. Zero business logic.
+**Services:**
 
-### 2. Services Layer
-Chat orchestration, document operations, business workflows, file resolution.
+| Service | Image | Role |
+|---|---|---|
+| `frontend` | Custom (Node + Nginx) | Builds React SPA, serves via Nginx |
+| `backend` | Custom (Python 3.11) | FastAPI + RAG pipeline |
+| `ollama` | `ollama/ollama` | Local LLM inference runtime |
+| `nginx` | `nginx:alpine` | Reverse proxy, unified routing |
 
-### 3. RAG Layer
-Embedding generation, FAISS retrieval, context construction, LLM generation.
-
----
-
-## 🧠 RAG Pipeline
-
-```
-User Query
-    ↓
-SentenceTransformer Embedding
-    ↓
-FAISS Vector Search
-    ↓
-Top-K Legal Chunks Retrieved
-    ↓
-Context Builder
-    ↓
-Qwen via Ollama (Local LLM)
-    ↓
-Retrieval-Grounded Legal Response
-```
+**Networking:** All services communicate over an internal Docker bridge network. The backend reaches Ollama at `http://ollama:11434` — not `localhost`, which was a resolved integration issue (see Engineering Challenges below).
 
 ---
 
-## 🎨 Frontend Design System
+## TypeScript Migration State
 
-A fully centralized, reusable UI architecture built with design tokens and shared primitives — consistent across all pages.
+**Philosophy:** Type safety applied where it prevents real bugs — data contracts, state machines, API boundaries. Not applied to pure rendering components where types add ceremony without benefit.
 
-**Design Tokens:** Typography scale, color system, spacing system, layout containers
+**Fully typed:**
+- `api.ts` — all backend communication
+- `chat.types.ts` — message, workspace, and session types
+- `contracts.ts` — single source of truth for shared data shapes
+- `useChat.ts` — chat state hook
+- `Chat.tsx` — main chat page
 
-**UI Primitives:** Button, Card, Badge, Input, Section, Container
-
-**Visual Identity:** Dark cinematic legal-tech aesthetic inspired by Harvey AI — premium, minimal, purposeful.
-
----
-
-## 🖥 Completed Pages
-
-### Home
-Full-screen immersive hero with animated legal-tech marquee, AI workflow visualization with Framer Motion, feature showcase, legal corpus preview stream, and premium Harvey-style footer.
-
-### Chat
-Multi-conversation sidebar, LocalStorage-persisted chat history, centered message layout, real-time RAG query interface, loading states.
-
-### Docs
-Legal document browser with document cards, corpus catalog integration, document metadata display.
+**Intentionally deferred:**
+- `Home.jsx` — static marketing page, no state
+- `Docs.jsx` — document browser, lightweight interaction
+- Pure UI components — buttons, layout wrappers, animations
 
 ---
 
-## ✅ Completed Features
+## Engineering Challenges Resolved
 
-### Frontend
-- Modular component architecture with separation of concerns
-- Multi-chat system with sidebar conversation management
-- LocalStorage persistence across sessions
-- Reusable design token system
-- Framer Motion animations throughout
-- Premium dark UI — cinematic legal-tech aesthetic
-- Animated marquee with seamless infinite loop
-- Responsive layout system
-- Document browsing and catalog interface
+**Ollama container networking**
+The backend initially called `http://localhost:11434` which resolves to the backend container itself, not Ollama. Fixed by using the Docker service name: `http://ollama:11434`. A subtle but critical Docker networking issue.
 
-### Backend
-- FastAPI modular 3-layer architecture
-- PDF ingestion pipeline via PyMuPDF
-- Intelligent text chunking system
-- SentenceTransformer semantic embeddings
-- FAISS vector index with metadata
-- Document catalog system (data_catalog.json)
-- Ollama integration with local Qwen inference
-- Retrieval-grounded response generation
+**Nginx 502/504 gateway errors**
+Initial proxy configuration did not correctly route `/api/` prefixed requests to the FastAPI backend. Resolved by correcting `proxy_pass` directives and ensuring upstream service names matched Docker Compose service definitions.
 
-### AI System
-- Fully functional end-to-end RAG pipeline
-- Semantic legal document retrieval
-- Context-aware legal reasoning
-- Local inference — no external API dependency
-- Nepal legal corpus indexed and searchable
+**`import.meta.env` in Vite + TypeScript**
+Environment variable access broke during TypeScript migration. Fixed by adding proper `vite-env.d.ts` type declarations and aligning variable naming to Vite's `VITE_` prefix convention.
+
+**`python-dotenv` dependency**
+Backend container failed on startup due to missing `python-dotenv`. Resolved by adding it to `requirements.txt` and rebuilding the image.
 
 ---
 
-## 🚀 Future Roadmap
+## Known Gaps
 
-### AI Enhancements
-- Multi-turn conversation memory
-- Citation-aware generation with source linking
-- Nepali + English bilingual reasoning
-- Legal summarization system
-- Context-aware follow-up handling
-
-### Product Features
-- Ask AI directly from Docs page
-- Advanced legal explorer
-- Case law search engine
-- OCR ingestion for scanned documents
-- Admin upload dashboard
-- Citation graph and legal knowledge relationships
-
-### Infrastructure
-- Dockerized deployment
-- Cloud infrastructure (AWS / GCP)
-- CI/CD pipeline
-- Authentication system
-- SaaS-ready multi-tenant architecture
+| Gap | Priority | Notes |
+|---|---|---|
+| No chunking benchmarks | Medium | Chunk size/overlap chosen empirically, not optimized |
+| No retrieval accuracy metrics | Medium | No ground-truth eval set exists yet |
+| No response latency profiling | Low | LLaMA 3 8B on CPU is slow; not yet measured |
+| No auth layer | Low | Single-user local tool, auth not in scope |
+| Corpus limited to English | Medium | Nepali-language documents excluded; no Nepali embedding model integrated |
+| localStorage only | Low | Chat history lost on browser clear; no backend persistence |
 
 ---
 
-## 🎯 What This Project Demonstrates
+## Planned Work
 
-NepJuris was built to demonstrate production-grade AI engineering — not tutorial-level knowledge.
-
-| Capability | Evidence |
-|---|---|
-| RAG system design | End-to-end pipeline from PDF to response |
-| NLP for low-resource languages | Nepali legal corpus, multilingual reasoning |
-| Full-stack AI development | React frontend + FastAPI backend + local LLM |
-| Software architecture | 3-layer backend, modular frontend, design system |
-| Product thinking | Harvey AI-inspired UX, complete user flows |
-| Real-world application | Solves an actual problem in the Nepali legal space |
+- [ ] Chunk size / overlap benchmarking against retrieval recall
+- [ ] Build a small eval set of legal Q&A pairs for retrieval accuracy measurement
+- [ ] Response latency profiling — GPU vs CPU inference
+- [ ] Expand corpus: add more acts and regulations
+- [ ] Explore Nepali-language document support (requires multilingual embedding model)
+- [ ] Backend-persisted chat history (replace localStorage with database)
+- [ ] Citation rendering in UI — surface which document chunk grounded each response
 
 ---
 
-> NepJuris evolved from an AI chatbot project into a complete legal intelligence platform —
-> a retrieval-first reasoning system built for production, designed for impact.
+## Design Principles (Enforced)
+
+1. **Retrieval-first** — the model cannot answer without retrieved context
+2. **Offline-first** — no outbound network calls after initial setup
+3. **Privacy-preserving** — legal queries never leave the local machine
+4. **Strict separation of concerns** — UI / API / inference / retrieval are independent layers
+5. **Type safety where it matters** — contracts and state machines, not UI boilerplate
+
+---
+
+*Last updated: June 2025*
