@@ -12,13 +12,8 @@ MODEL_NAME = "llama3"
 
 
 class Generator:
-    def __init__(self):
-        self.retriever = Retriever()
-        self.retriever.load()
-
     def build_prompt(self, query, contexts):
 
-        # 🔥 Structured legal context
         context_text = format_context(contexts)
 
         prompt = f"""
@@ -71,8 +66,7 @@ Answer:
 """
         return prompt
 
-    def generate(self, query):
-        contexts = self.retriever.retrieve(query)
+    def generate(self, query, contexts):
 
         prompt = self.build_prompt(query, contexts)
 

@@ -127,11 +127,13 @@ nepjuris/
 │           └── chat.types.ts
 │
 └── backend/
+    |__data/  
     ├── routes/
     │   ├── chat.py
     │   └── documents.py
     ├── services/
     │   └── chat_service.py
+    |   |__ document_service.py
     ├── rag/
     │   ├── retriever.py
     │   ├── generator.py
