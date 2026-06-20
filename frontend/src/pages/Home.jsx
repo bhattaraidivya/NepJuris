@@ -1,12 +1,12 @@
 import Navbar from "../components/layout/Navbar";
 import Hero from "../components/home/Hero";
 import Workflow from "../components/home/Workflow";
-import Transition from "../components/home/CorpusPreview";
+import CorpusPreview from "../components/home/CorpusPreview";
 import Features from "../components/home/Features";
 import Trust from "../components/home/Trust";
 import Footer from "../components/layout/Footer";
 
-import CorpusPreview from "../components/home/CorpusPreview";
+
 
 
 export default function Home() {

@@ -9,10 +9,12 @@ import hero2 from "../../assets/hero2.jpg";
 import hero3 from "../../assets/hero3.jpg";
 import hero4 from "../../assets/hero4.jpg";
 
+// ================= HERO IMAGES =================//
+const images = [hero1, hero2, hero3, hero4];
+
 export default function Hero() {
 
-  // ================= HERO IMAGES =================
-  const images = [hero1, hero2, hero3, hero4];
+  
 
   const [currentImage, setCurrentImage] = useState(0);
 

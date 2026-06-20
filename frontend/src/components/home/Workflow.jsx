@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { layout } from "../../design/layout";
 
-export default function Workflow() {
-  const steps = [
+const steps = [
     {
       title: "Understanding Query",
       desc: "NepJuris interprets the legal question into semantic embeddings."
@@ -25,6 +24,9 @@ export default function Workflow() {
       desc: "Response is returned with citations from Nepal legal documents."
     }
   ];
+  
+export default function Workflow() {
+  
 
   const [index, setIndex] = useState(0);
   const [progress, setProgress] = useState(0);
