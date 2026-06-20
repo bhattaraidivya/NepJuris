@@ -75,25 +75,29 @@ def build_knowledge_base():
 
             # STEP 3: Embed + store in FAISS
             for i, chunk in enumerate(chunks):
-                embedding = create_embedding(chunk)
+                embedding = create_embedding(chunk["text"])
 
-            
+                page_label = (
+                    str(chunk["page_start"])
+                    if chunk["page_start"] == chunk["page_end"]
+                    else f"{chunk['page_start']}-{chunk['page_end']}"
+                )
+
                 metadata = {
                     "doc_id": doc["id"],
                     "doc_name": doc["name"],
 
                     # 🔥 REAL CITATION FIELDS
                     "source": doc["name"],
-
-                    # If available from PDF processing later
-                    "page": doc.get("page", None),
+                    "page": page_label,
                     "section": doc.get("section", None),
                     "article": doc.get("article", None),
 
                     "chunk_id": f"{doc['id']}_{i}",
 
-                    "text": chunk
+                    "text": chunk["text"]
                 }
+                
 
 
 
