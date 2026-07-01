@@ -1,4 +1,4 @@
-import type { ChatMessage } from "../types/chat.types";
+import type { ChatMessage, Source } from "../types/chat.types";
 
 /**
  * =========================
@@ -38,7 +38,8 @@ export type MessageTypeType =
 export function createMessage(
   role: MessageRoleType,
   content: string,
-  type: MessageTypeType = MessageType.TEXT
+  type: MessageTypeType = MessageType.TEXT,
+  sources?: Source[]
 ): ChatMessage {
   return {
     id: Date.now().toString(),
@@ -46,5 +47,6 @@ export function createMessage(
     content,
     type,
     timestamp: Date.now(),
+    ...(sources ? { sources } : {}),
   };
 }

@@ -1,27 +1,35 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DocumentCard from "../components/docs/DocumentCard";
+import UploadDocumentModal from "../components/docs/UploadDocumentModal";
+import Button from "../components/ui/Button";
+import { getDocuments } from "../services/api";
 
-const BASE_URL = "/api";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function Docs() {
   const [documents, setDocuments] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [showUpload, setShowUpload] = useState(false);
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetch(`${BASE_URL}/documents`)
-      .then((res) => res.json())
+  const fetchDocuments = () => {
+    getDocuments()
       .then((data) => {
         setDocuments(data.documents || []);
-        setLoading(false);
+        setLoadError("");
       })
       .catch((err) => {
-        console.error(err);
-        setLoading(false);
-      });
+        setLoadError(err instanceof Error ? err.message : "Failed to load documents.");
+      })
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchDocuments();
   }, []);
 
   const filteredDocs = documents.filter((doc) =>
@@ -43,11 +51,16 @@ export default function Docs() {
     );
   };
 
+  const handleUploaded = () => {
+    // Re-fetch rather than optimistically append, since the backend
+    // may adjust fields (id, status) during ingestion.
+    setLoading(true);
+    fetchDocuments();
+  };
+
   return (
     <div className="min-h-screen text-zinc-900 relative overflow-hidden bg-linear-to-b from-zinc-50 via-white to-zinc-100">
-    
-      
-      
+
       {/* FLOATING BACK CHIP (NEW NAVIGATION STYLE) */}
       <button
         onClick={() => navigate(-1)}
@@ -76,13 +89,21 @@ export default function Docs() {
       {/* HEADER */}
       <div className="max-w-5xl mx-auto pt-20 px-6">
 
-        <h1 className="text-3xl font-semibold text-zinc-900">
-          NepJuris Docs
-        </h1>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-semibold text-zinc-900">
+              NepJuris Docs
+            </h1>
 
-        <p className="text-zinc-500 mt-2">
-          Legal documents and statutes indexed for AI search.
-        </p>
+            <p className="text-zinc-500 mt-2">
+              Legal documents and statutes indexed for AI search.
+            </p>
+          </div>
+
+          <Button variant="secondary" onClick={() => setShowUpload(true)}>
+            + Add Document
+          </Button>
+        </div>
 
         {/* SEARCH (CLEAN + MODERN) */}
         <div className="mt-6">
@@ -110,11 +131,13 @@ export default function Docs() {
           />
         </div>
 
-        {/* LOADING */}
+        {/* LOADING / ERROR */}
         {loading ? (
           <p className="text-zinc-500 mt-6">
             Loading documents...
           </p>
+        ) : loadError ? (
+          <p className="text-red-600 mt-6">{loadError}</p>
         ) : (
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 mt-8">
 
@@ -131,7 +154,14 @@ export default function Docs() {
         )}
 
       </div>
-      
+
+      {showUpload && (
+        <UploadDocumentModal
+          onClose={() => setShowUpload(false)}
+          onUploaded={handleUploaded}
+        />
+      )}
+
     </div>
   );
 }

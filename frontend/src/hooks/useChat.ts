@@ -220,7 +220,8 @@ export default function useChat(): UseChatReturn {
       const aiMessage = createMessage(
         MessageRole.AI,
         response.response,
-        MessageType.TEXT
+        MessageType.TEXT,
+        response.sources
       );
 
       setConversations((prev) =>
@@ -236,6 +237,9 @@ export default function useChat(): UseChatReturn {
         )
       );
     } catch (err) {
+      const errorText =
+        err instanceof Error ? err.message : "Error connecting to backend.";
+
       setConversations((prev) =>
         prev.map((chat) =>
           chat.id === chatId
@@ -244,10 +248,7 @@ export default function useChat(): UseChatReturn {
                 messages: chat.messages
                   .filter((m) => m.type !== MessageType.TYPING)
                   .concat(
-                    createMessage(
-                      MessageRole.AI,
-                      "Error connecting to backend."
-                    )
+                    createMessage(MessageRole.AI, errorText, MessageType.ERROR)
                   ),
               }
             : chat

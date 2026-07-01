@@ -54,7 +54,17 @@ Ollama — LLaMA 3 8B (local inference)
 Retrieval-Grounded Legal Response
 ```
 
-Every response is sourced from retrieved document chunks. The prompt explicitly prohibits the model from drawing on outside knowledge or fabricating legal references.
+Every response is sourced from retrieved document chunks. The prompt explicitly prohibits the model from drawing on outside knowledge or fabricating legal references, and every answer is returned alongside the document, page, and article/section it was grounded in.
+
+---
+
+## Screenshots
+
+| Chat | Docs |
+|---|---|
+| ![Chat interface](frontend/src/assets/Chatpage_Screenshot.jpg) | ![Document browser](frontend/src/assets/Docspage_Screenshot.jpg) |
+
+![Homepage hero](frontend/src/assets/Hero_Screenshot.jpg)
 
 ---
 
@@ -161,9 +171,11 @@ cd nepjuris
 docker compose up --build
 ```
 
-The system automatically provisions all four containers and wires them over an internal Docker network. Open `http://localhost` when startup completes.
+The system automatically provisions all four containers and wires them over an internal Docker network. A one-shot `ollama-init` service pulls the LLaMA/Qwen model into a shared volume on first run, so no manual `ollama pull` step is required — on a fresh clone this can take a few minutes depending on connection speed, after which the backend waits for it to finish before starting. The repository ships with a pre-built FAISS index over the five-document corpus, so chat works immediately once startup completes.
 
-To ingest documents, place PDFs in the designated corpus directory and trigger the ingestion pipeline via the `/api/ingest` endpoint or the document management UI.
+Open `http://localhost` when startup completes.
+
+To add a new document to the corpus, use the **+ Add Document** button on the Docs page: it uploads a PDF, extracts and chunks the text, embeds it, and adds it to the live FAISS index — no restart or separate ingestion step required. (For bulk re-indexing of the full catalog from scratch: `docker exec nepjuris-backend python -m pipeline.ingest`.)
 
 ---
 
@@ -171,7 +183,9 @@ To ingest documents, place PDFs in the designated corpus directory and trigger t
 
 - **Multi-workspace chat** — independent sessions, each with persistent history
 - **Retrieval-grounded responses** — every answer sourced from actual document chunks
+- **Inline citations** — each answer lists the source document, page, and article/section it drew from
 - **Document browser** — metadata-aware corpus explorer with direct doc-to-chat interaction
+- **Live document ingestion** — upload a new PDF from the UI and it's chunked, embedded, and searchable immediately
 - **No-hallucination enforcement** — prompt-level constraint refusing unsupported answers
 - **Fully offline** — zero outbound network dependency after initial model pull
 
@@ -183,4 +197,17 @@ NepJuris is a demonstration of production-grade RAG system design applied to a r
 
 ---
 
-*Built by [Divya Bhattarai]*
+## Testing & CI
+
+- **Backend** — pytest unit tests for the pure-logic pipeline stages (chunking, header/footer stripping, citation formatting), linted with `ruff`. Runs on push/PR via `.github/workflows/backend-ci.yml`.
+- **Frontend** — ESLint + production build check via `.github/workflows/frontend-ci.yml`.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+---
+
+*Built by Divya Bhattarai*

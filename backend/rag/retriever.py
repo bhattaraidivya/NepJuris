@@ -1,6 +1,14 @@
+import logging
 import os
+
 from rag.embedder import create_embedding
 from rag.vector_store import VectorStore
+
+logger = logging.getLogger(__name__)
+
+
+class RetrieverNotReadyError(Exception):
+    """Raised when retrieve() is called before the FAISS index has loaded."""
 
 
 class Retriever:
@@ -19,15 +27,20 @@ class Retriever:
         self.loaded = False
 
     # =========================
-    # LOAD FAISS INDEX
+    # LOAD / RELOAD FAISS INDEX
     # =========================
     def load(self):
+        """Loads (or reloads) the on-disk FAISS index + metadata into memory.
+
+        Safe to call again after ingestion writes a new index, since callers
+        share a single Retriever instance via get_retriever().
+        """
         try:
             self.store.load(self.index_path)
             self.loaded = True
-            print("✅ FAISS index loaded successfully")
-        except Exception as e:
-            print("⚠️ FAISS index not loaded:", e)
+            logger.info("FAISS index loaded successfully (%d chunks)", len(self.store.metadata))
+        except Exception:
+            logger.exception("FAISS index failed to load from %s", self.index_path)
             self.loaded = False
 
     # =========================
@@ -35,7 +48,9 @@ class Retriever:
     # =========================
     def retrieve(self, query, top_k=5):
         if not self.loaded:
-            raise Exception("FAISS index not loaded. Call load() first.")
+            raise RetrieverNotReadyError(
+                "FAISS index not loaded. Ingest documents before querying."
+            )
 
         # Embed the raw query directly. SentenceTransformer models are
         # trained on full natural-language input, so no manual expansion
@@ -61,3 +76,21 @@ class Retriever:
             print(r["text"][:300])
 
         return results
+
+
+# =========================
+# SHARED SINGLETON
+# =========================
+# Both chat serving and document ingestion need to see the same in-memory
+# index: ingestion writes a fresh index to disk, then calls get_retriever()
+# to hot-reload it so new documents are searchable immediately, with no
+# backend restart required.
+_shared_retriever: Retriever | None = None
+
+
+def get_retriever() -> Retriever:
+    global _shared_retriever
+    if _shared_retriever is None:
+        _shared_retriever = Retriever()
+        _shared_retriever.load()
+    return _shared_retriever

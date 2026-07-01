@@ -87,6 +87,20 @@ export default function Message({
         `}
       >
         {message.content}
+
+        {!isUser && message.sources && message.sources.length > 0 && (
+          <div className="mt-3 pt-2 border-t border-zinc-700 text-xs text-zinc-400 space-y-0.5">
+            <div className="font-medium text-zinc-300">Sources</div>
+            {message.sources.map((source, i) => (
+              <div key={i}>
+                {source.title}
+                {source.article ? `, Article ${source.article}` : ""}
+                {source.section ? `, Section ${source.section}` : ""}
+                {source.page ? `, Page ${source.page}` : ""}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

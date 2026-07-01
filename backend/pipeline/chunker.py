@@ -22,15 +22,11 @@ def chunk_text(text: str, chunk_size: int = 600, overlap_sentences: int = 1):
     if not text:
         return chunks
 
-    # Locate page markers and their positions in the ORIGINAL text,
-    # before stripping, so we can map sentence positions back to pages.
-    page_boundaries = [
-        (m.start(), int(m.group(1)))
-        for m in PAGE_MARKER_PATTERN.finditer(text)
-    ]
     clean_text = PAGE_MARKER_PATTERN.sub("", text)
 
-    # Recompute boundary positions relative to clean_text.
+    # Locate page marker positions relative to clean_text (i.e. after
+    # stripping), so sentence offsets computed against clean_text later
+    # can be mapped back to the correct page.
     cleaned_boundaries = []
     removed_so_far = 0
     for match in PAGE_MARKER_PATTERN.finditer(text):

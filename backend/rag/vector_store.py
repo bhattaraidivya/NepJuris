@@ -7,7 +7,7 @@ class VectorStore:
     def __init__(self, dim=384):
         self.dim = dim
         self.index = faiss.IndexFlatL2(dim)
-        self.metadata = []
+        self.metadata = [] 
 
     def add(self, embedding, metadata):
         vector = np.array(embedding).astype("float32").reshape(1, -1)

@@ -1,22 +1,46 @@
-from fastapi import APIRouter
-from pydantic import BaseModel
+import logging
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
+
+from rag.generator import GenerationError
+from rag.retriever import RetrieverNotReadyError
 from services.chat_service import ChatService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 chat_service = ChatService()
 
 
-
 class ChatRequest(BaseModel):
-    message: str
+    message: str = Field(..., min_length=1, max_length=2000)
 
 
 @router.post("/chat")
 def chat(request: ChatRequest):
-    try:
-        response = chat_service.generate_response(request.message)
-        return {"response": response}
+    message = request.message.strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="Message cannot be empty.")
 
-    except Exception as e:
-        return {"error": str(e)}
+    try:
+        return chat_service.generate_response(message)
+
+    except RetrieverNotReadyError as e:
+        logger.error("Retriever not ready: %s", e)
+        raise HTTPException(
+            status_code=503,
+            detail="The document index isn't loaded yet. Try again shortly, or ingest documents first.",
+        ) from e
+
+    except GenerationError as e:
+        logger.error("Generation failed: %s", e)
+        raise HTTPException(
+            status_code=502,
+            detail="The AI model couldn't generate a response. Please try again.",
+        ) from e
+
+    except Exception:
+        logger.exception("Unexpected error handling chat request")
+        raise HTTPException(status_code=500, detail="Something went wrong processing your request.")

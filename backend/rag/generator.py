@@ -1,12 +1,16 @@
+import logging
 import os
+
 import requests
+
 from rag.context_formatter import format_context
+
+logger = logging.getLogger(__name__)
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434/api/generate")
 MODEL_NAME = os.getenv("MODEL_NAME", "qwen2.5:3b").strip()
 
 REQUEST_TIMEOUT = 60
-ERROR_MESSAGE = "Error generating response"
 
 PROMPT_TEMPLATE = """
 You are NepJuris, a retrieval-based legal assistant for Nepal.
@@ -63,6 +67,10 @@ B) LEGAL QUESTION
 """
 
 
+class GenerationError(Exception):
+    """Raised when the LLM backend fails to produce a response."""
+
+
 class Generator:
     """Builds prompts from retrieved context and calls Ollama to generate answers."""
 
@@ -85,23 +93,20 @@ class Generator:
             )
 
             if response.status_code != 200:
-                print(f"Generator error: Ollama returned status {response.status_code}")
-                return ERROR_MESSAGE
+                logger.error("Ollama returned status %s: %s", response.status_code, response.text[:500])
+                raise GenerationError(f"LLM backend returned status {response.status_code}")
 
             data = response.json()
 
             if isinstance(data, dict) and "response" in data:
                 return data["response"]
 
-            print("Generator error: unexpected response shape:", data)
-            return ERROR_MESSAGE
+            logger.error("Unexpected Ollama response shape: %s", data)
+            raise GenerationError("LLM backend returned an unexpected response shape")
 
-        except requests.exceptions.Timeout:
-            print("Generator error: request to Ollama timed out")
-            return ERROR_MESSAGE
+        except requests.exceptions.Timeout as e:
+            logger.error("Request to Ollama timed out")
+            raise GenerationError("The LLM backend timed out") from e
         except requests.exceptions.RequestException as e:
-            print("Generator error:", str(e))
-            return ERROR_MESSAGE
-        except Exception as e:
-            print("Generator error:", str(e))
-            return ERROR_MESSAGE
+            logger.error("Request to Ollama failed: %s", e)
+            raise GenerationError("Could not reach the LLM backend") from e

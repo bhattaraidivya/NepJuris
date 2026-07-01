@@ -53,5 +53,16 @@
     "extraction_type": "text",
     "source": "official",
     "file_path": "data/raw/cybercrime_en.pdf"
+  },
+  {
+    "id": "doc_006",
+    "name": "Women Right",
+    "file_path": "data/raw/doc_006.pdf",
+    "language": "en",
+    "type": "pdf",
+    "category": "Law",
+    "extraction_type": "text",
+    "source": "user_upload",
+    "status": "indexed"
   }
 ]

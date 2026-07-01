@@ -1,24 +1,26 @@
 export type MessageRole = "user" | "ai";
 export type MessageType = "text" | "typing" | "error";
 
+export interface Source {
+  title: string;
+  page?: string;
+  section?: string;
+  article?: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: MessageRole;
   content: string;
   type: MessageType;
   timestamp: number;
+  sources?: Source[];
 }
 
 export interface Chat {
   id: string;
   title: string;
   messages: ChatMessage[];
-}
-
-export interface Source {
-  title: string;
-  page?: number;
-  chunk?: string;
 }
 
 export interface ChatResponse {
