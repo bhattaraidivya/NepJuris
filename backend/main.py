@@ -3,6 +3,8 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -12,10 +14,17 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 
+from rate_limiter import limiter  # noqa: E402
 from routes.chat import router as chat_router  # noqa: E402
 from routes.documents import router as docs_router  # noqa: E402
 
 app = FastAPI(title="NepJuris API")
+
+# Rate limiting keyed by client IP. Requires uvicorn to run with
+# --proxy-headers so get_remote_address sees the real client IP from
+# X-Forwarded-For instead of the hosting platform's load balancer IP.
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 DEFAULT_ORIGINS = "http://localhost:5173,http://localhost"
 allowed_origins = [

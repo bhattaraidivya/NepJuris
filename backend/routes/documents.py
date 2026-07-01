@@ -1,4 +1,7 @@
-from fastapi import APIRouter, File, Form, UploadFile
+import os
+
+from fastapi import APIRouter, File, Form, Request, UploadFile
+from rate_limiter import limiter
 from services.document_service import DocumentService
 from services.ingestion_service import IngestionService
 
@@ -6,6 +9,8 @@ router = APIRouter()
 
 service = DocumentService()
 ingestion_service = IngestionService()
+
+UPLOAD_RATE_LIMIT = os.getenv("UPLOAD_RATE_LIMIT", "3/hour")
 
 
 @router.get("/documents")
@@ -24,7 +29,9 @@ def download_document(doc_id: str):
 
 
 @router.post("/documents/upload")
+@limiter.limit(UPLOAD_RATE_LIMIT)
 async def upload_document(
+    request: Request,
     file: UploadFile = File(...),
     name: str = Form(...),
     category: str = Form(""),

@@ -8,9 +8,6 @@ services:
       - ./backend/.env
     volumes:
       - ./backend/data:/app/data
-    depends_on:
-      ollama-init:
-        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 10s
@@ -44,39 +41,6 @@ services:
     networks:
       - app-network
 
-  ollama:
-    image: ollama/ollama
-    container_name: ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    healthcheck:
-      test: ["CMD-SHELL", "ollama list || exit 1"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-    networks:
-      - app-network
-
-  # One-shot init job: pulls the LLM into the shared `ollama_data` volume
-  # on first run so `docker compose up --build` works out of the box.
-  # Runs again on every startup but is a no-op once the model is cached.
-  ollama-init:
-    image: ollama/ollama
-    container_name: nepjuris-ollama-init
-    environment:
-      - OLLAMA_HOST=http://ollama:11434
-    entrypoint: ["ollama", "pull", "qwen2.5:3b"]
-    depends_on:
-      ollama:
-        condition: service_healthy
-    networks:
-      - app-network
-
 networks:
   app-network:
     driver: bridge
-
-volumes:
-  ollama_data:

@@ -1,10 +1,12 @@
 import logging
+import os
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from rag.generator import GenerationError
 from rag.retriever import RetrieverNotReadyError
+from rate_limiter import limiter
 from services.chat_service import ChatService
 
 logger = logging.getLogger(__name__)
@@ -13,14 +15,17 @@ router = APIRouter()
 
 chat_service = ChatService()
 
+CHAT_RATE_LIMIT = os.getenv("CHAT_RATE_LIMIT", "10/minute")
+
 
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
 
 
 @router.post("/chat")
-def chat(request: ChatRequest):
-    message = request.message.strip()
+@limiter.limit(CHAT_RATE_LIMIT)
+def chat(request: Request, payload: ChatRequest):
+    message = payload.message.strip()
     if not message:
         raise HTTPException(status_code=400, detail="Message cannot be empty.")
 

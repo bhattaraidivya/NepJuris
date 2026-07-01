@@ -6,6 +6,7 @@ import Button from "../components/ui/Button";
 import { getDocuments } from "../services/api";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const IS_DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
 
 export default function Docs() {
   const [documents, setDocuments] = useState([]);
@@ -104,6 +105,15 @@ export default function Docs() {
             + Add Document
           </Button>
         </div>
+
+        {IS_DEMO_MODE && (
+          <div className="mt-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+            Demo mode: uploaded documents are temporary and reset when this
+            instance restarts. Clone the repo and run{" "}
+            <code className="font-mono">docker compose up</code> for
+            persistent storage.
+          </div>
+        )}
 
         {/* SEARCH (CLEAN + MODERN) */}
         <div className="mt-6">
