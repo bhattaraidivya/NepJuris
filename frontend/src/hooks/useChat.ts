@@ -9,8 +9,8 @@ type Chat = {
   messages: ChatMessage[];
 };
 
-const STORAGE_KEY = "nyayaai_conversations";
-const ACTIVE_CHAT_KEY = "nyayaai_active_chat";
+const STORAGE_KEY = "nepjuris_conversations";
+const ACTIVE_CHAT_KEY = "nepjuris_active_chat";
 
 export default function useChat(): UseChatReturn {
   const [conversations, setConversations] = useState<Chat[]>(() => {
@@ -31,17 +31,14 @@ export default function useChat(): UseChatReturn {
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const currentChat: Chat | undefined = conversations.find(
-    (c) => c.id === currentChatId
+    (c) => c.id === currentChatId,
   );
 
   // =========================
   // TITLE GENERATOR
   // =========================
   const generateTitle = (text: string): string => {
-    const cleaned = text
-      .replace(/\n/g, " ")
-      .trim()
-      .toLowerCase();
+    const cleaned = text.replace(/\n/g, " ").trim().toLowerCase();
 
     const stopWords = [
       "what",
@@ -67,9 +64,7 @@ export default function useChat(): UseChatReturn {
 
     const title = words.join(" ");
 
-    return title
-      ? title.charAt(0).toUpperCase() + title.slice(1)
-      : "New Chat";
+    return title ? title.charAt(0).toUpperCase() + title.slice(1) : "New Chat";
   };
 
   // =========================
@@ -117,7 +112,7 @@ export default function useChat(): UseChatReturn {
     setConversations(updated);
 
     if (chatId === currentChatId) {
-     setCurrentChatId(updated[0]?.id ?? null);
+      setCurrentChatId(updated[0]?.id ?? null);
     }
   };
 
@@ -136,8 +131,8 @@ export default function useChat(): UseChatReturn {
       prev.map((chat) =>
         chat.id === editingChatId
           ? { ...chat, title: editingTitle.trim() }
-          : chat
-      )
+          : chat,
+      ),
     );
 
     setEditingChatId(null);
@@ -171,11 +166,7 @@ export default function useChat(): UseChatReturn {
       setCurrentChatId(chatId);
     }
 
-    const userMessage = createMessage(
-      MessageRole.USER,
-      text,
-      MessageType.TEXT
-    );
+    const userMessage = createMessage(MessageRole.USER, text, MessageType.TEXT);
 
     // ADD USER MESSAGE + TITLE UPDATE
     setConversations((prev) =>
@@ -187,19 +178,13 @@ export default function useChat(): UseChatReturn {
         return {
           ...chat,
           messages: [...chat.messages, userMessage],
-          title: isFirstMessage
-            ? generateTitle(text)
-            : chat.title,
+          title: isFirstMessage ? generateTitle(text) : chat.title,
         };
-      })
+      }),
     );
 
     // TYPING MESSAGE
-    const typingMessage = createMessage(
-      MessageRole.AI,
-      "",
-      MessageType.TYPING
-    );
+    const typingMessage = createMessage(MessageRole.AI, "", MessageType.TYPING);
 
     setConversations((prev) =>
       prev.map((chat) =>
@@ -208,8 +193,8 @@ export default function useChat(): UseChatReturn {
               ...chat,
               messages: [...chat.messages, typingMessage],
             }
-          : chat
-      )
+          : chat,
+      ),
     );
 
     setLoading(true);
@@ -221,7 +206,7 @@ export default function useChat(): UseChatReturn {
         MessageRole.AI,
         response.response,
         MessageType.TEXT,
-        response.sources
+        response.sources,
       );
 
       setConversations((prev) =>
@@ -233,8 +218,8 @@ export default function useChat(): UseChatReturn {
                   .filter((m) => m.type !== MessageType.TYPING)
                   .concat(aiMessage),
               }
-            : chat
-        )
+            : chat,
+        ),
       );
     } catch (err) {
       const errorText =
@@ -248,11 +233,11 @@ export default function useChat(): UseChatReturn {
                 messages: chat.messages
                   .filter((m) => m.type !== MessageType.TYPING)
                   .concat(
-                    createMessage(MessageRole.AI, errorText, MessageType.ERROR)
+                    createMessage(MessageRole.AI, errorText, MessageType.ERROR),
                   ),
               }
-            : chat
-        )
+            : chat,
+        ),
       );
     }
 
