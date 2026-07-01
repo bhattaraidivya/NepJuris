@@ -6,8 +6,10 @@ import json
 class VectorStore:
     def __init__(self, dim=384):
         self.dim = dim
-        self.index = faiss.IndexFlatL2(dim)
-        self.metadata = [] 
+        # Inner product over normalized vectors == cosine similarity.
+        # Embeddings must be normalized at encoding time (see embedder.py).
+        self.index = faiss.IndexFlatIP(dim)
+        self.metadata = []
 
     def add(self, embedding, metadata):
         vector = np.array(embedding).astype("float32").reshape(1, -1)
@@ -17,12 +19,17 @@ class VectorStore:
     def search(self, query_embedding, top_k=5):
         query_vector = np.array(query_embedding).astype("float32").reshape(1, -1)
 
-        distances, indices = self.index.search(query_vector, top_k)
+        scores, indices = self.index.search(query_vector, top_k)
 
         results = []
-        for idx in indices[0]:
+        for score, idx in zip(scores[0], indices[0]):
+            # FAISS pads with -1 when the index holds fewer than top_k
+            # vectors; without this check that would wrap to metadata[-1]
+            # and silently return an unrelated chunk as a "match".
+            if idx == -1:
+                continue
             if idx < len(self.metadata):
-                results.append(self.metadata[idx])
+                results.append({**self.metadata[idx], "score": float(score)})
 
         return results
 

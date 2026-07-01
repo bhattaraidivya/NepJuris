@@ -1,4 +1,4 @@
-import type { UseChatReturn, Chat } from "../../types/chat.types";
+import type { UseChatReturn } from "../../types/chat.types";
 
 type SidebarProps = Pick<
   UseChatReturn,

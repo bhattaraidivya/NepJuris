@@ -16,11 +16,17 @@ function normalizeSource(s: BackendSource): Source {
   };
 }
 
-export function normalizeChatResponse(data: any): ChatResponse {
-  const rawSources = Array.isArray(data?.sources) ? data.sources : [];
+interface BackendChatResponse {
+  response?: string;
+  sources?: BackendSource[];
+}
+
+export function normalizeChatResponse(data: unknown): ChatResponse {
+  const parsed = data as BackendChatResponse | null | undefined;
+  const rawSources = Array.isArray(parsed?.sources) ? parsed.sources : [];
 
   return {
-    response: data?.response || "",
+    response: parsed?.response || "",
     sources: rawSources.map(normalizeSource),
   };
 }

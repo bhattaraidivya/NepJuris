@@ -6,6 +6,16 @@ from rag.vector_store import VectorStore
 
 logger = logging.getLogger(__name__)
 
+# Cosine similarity (via normalized embeddings + IndexFlatIP) below this
+# score is treated as "not actually about the corpus" — greetings, small
+# talk, and out-of-domain questions naturally score low against a legal
+# corpus, so this is what keeps retrieval (and citations) from firing on
+# non-legal queries instead of a hand-maintained keyword/greeting list.
+MIN_RELEVANCE_SCORE = float(os.getenv("RETRIEVAL_MIN_SCORE", "0.35"))
+
+DEFAULT_TOP_K = 5
+DEFAULT_FETCH_K = 10  # candidate pool fetched before relevance filtering
+
 
 class RetrieverNotReadyError(Exception):
     """Raised when retrieve() is called before the FAISS index has loaded."""
@@ -46,7 +56,7 @@ class Retriever:
     # =========================
     # MAIN RETRIEVAL FUNCTION
     # =========================
-    def retrieve(self, query, top_k=5):
+    def retrieve(self, query, top_k=DEFAULT_TOP_K, fetch_k=DEFAULT_FETCH_K):
         if not self.loaded:
             raise RetrieverNotReadyError(
                 "FAISS index not loaded. Ingest documents before querying."
@@ -57,9 +67,21 @@ class Retriever:
         # is needed here.
         query_embedding = create_embedding(query)
 
-        results = self.store.search(query_embedding, top_k)
+        # Fetch a wider candidate pool than we intend to keep, since
+        # filtering by relevance below may discard some of them.
+        candidates = self.store.search(query_embedding, fetch_k)
 
-        return results
+        relevant = [c for c in candidates if c.get("score", 0.0) >= MIN_RELEVANCE_SCORE]
+
+        if not relevant:
+            top_score = candidates[0]["score"] if candidates else float("-inf")
+            logger.info(
+                "No chunks met the relevance threshold (%.2f) for query %r — top score was %.3f. "
+                "Treating as a non-legal / out-of-corpus query.",
+                MIN_RELEVANCE_SCORE, query, top_score,
+            )
+
+        return relevant[:top_k]
 
     # =========================
     # OPTIONAL: DEBUG HELPERS
