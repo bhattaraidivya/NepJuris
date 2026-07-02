@@ -62,3 +62,36 @@ def test_raises_on_non_200_status(mock_post):
 def test_raises_on_unexpected_response_shape(mock_post):
     with pytest.raises(GenerationError):
         Generator().generate("question", [])
+
+
+class TestConversationHistory:
+    @patch("rag.generator.requests.post", return_value=_ollama_response("in_scope", "the answer"))
+    def test_history_turns_are_included_in_the_prompt(self, mock_post):
+        history = [
+            {"role": "user", "content": "what is the divorce law"},
+            {"role": "assistant", "content": "here's what applies..."},
+        ]
+
+        Generator().generate("what about for married couples?", [], history)
+
+        sent_prompt = mock_post.call_args.kwargs["json"]["prompt"]
+        assert "CONVERSATION HISTORY" in sent_prompt
+        assert "User: what is the divorce law" in sent_prompt
+        assert "Assistant: here's what applies..." in sent_prompt
+
+    @patch("rag.generator.requests.post", return_value=_ollama_response("in_scope", "the answer"))
+    def test_history_is_truncated_to_max_messages(self, mock_post):
+        history = [{"role": "user", "content": f"turn {i}"} for i in range(20)]
+
+        Generator().generate("latest question", [], history)
+
+        sent_prompt = mock_post.call_args.kwargs["json"]["prompt"]
+        assert "turn 19" in sent_prompt
+        assert "turn 13" not in sent_prompt  # dropped by the MAX_HISTORY_MESSAGES cap
+
+    @patch("rag.generator.requests.post", return_value=_ollama_response("in_scope", "the answer"))
+    def test_no_history_block_when_history_is_empty(self, mock_post):
+        Generator().generate("question", [], [])
+
+        sent_prompt = mock_post.call_args.kwargs["json"]["prompt"]
+        assert "CONVERSATION HISTORY" not in sent_prompt

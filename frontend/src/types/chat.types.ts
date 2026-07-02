@@ -28,6 +28,11 @@ export interface ChatResponse {
   sources?: Source[];
 }
 
+export interface ChatHistoryTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
 /**
  * IMPORTANT: Use contracts.ts for runtime logic
  */

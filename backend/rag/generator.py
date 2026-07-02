@@ -13,6 +13,11 @@ MODEL_NAME = os.getenv("MODEL_NAME", "qwen2.5:3b").strip()
 
 REQUEST_TIMEOUT = 60
 
+# Number of prior turns (user + assistant messages combined) sent with each
+# request. The frontend keeps full history client-side; the backend stays
+# stateless and just trusts the last N turns it's handed each call.
+MAX_HISTORY_MESSAGES = int(os.getenv("MAX_HISTORY_MESSAGES", "6"))
+
 SYSTEM_PROMPT = """You are NepJuris, a retrieval-based legal assistant for Nepal.
 
 You DO NOT use external knowledge.
@@ -75,15 +80,36 @@ class GenerationError(Exception):
 class Generator:
     """Builds prompts from retrieved context and calls Ollama to generate answers."""
 
-    def build_prompt(self, query, contexts):
+    def build_prompt(self, query, contexts, history=None):
         context_text = format_context(contexts)
+        history_text = self._format_history(history or [])
         # SYSTEM_PROMPT contains a literal JSON example with braces, so it's
         # kept out of the .format() call to avoid it being parsed as a field.
-        return SYSTEM_PROMPT + USER_PROMPT_TEMPLATE.format(context=context_text, question=query)
+        return (
+            SYSTEM_PROMPT
+            + history_text
+            + USER_PROMPT_TEMPLATE.format(context=context_text, question=query)
+        )
 
-    def generate(self, query, contexts):
-        """Returns {"answer": str, "scope": "greeting"|"in_scope"|"out_of_scope"}."""
-        prompt = self.build_prompt(query, contexts)
+    @staticmethod
+    def _format_history(history):
+        if not history:
+            return ""
+
+        lines = ["\n---\n\n# CONVERSATION HISTORY (most recent last)"]
+        for turn in history:
+            speaker = "Assistant" if turn.get("role") == "assistant" else "User"
+            lines.append(f"{speaker}: {turn.get('content', '')}")
+        return "\n".join(lines) + "\n"
+
+    def generate(self, query, contexts, history=None):
+        """Returns {"answer": str, "scope": "greeting"|"in_scope"|"out_of_scope"}.
+
+        history is an ordered list of {"role": "user"|"assistant", "content": str}
+        prior turns, oldest first; only the most recent MAX_HISTORY_MESSAGES are used.
+        """
+        history = (history or [])[-MAX_HISTORY_MESSAGES:]
+        prompt = self.build_prompt(query, contexts, history)
 
         try:
             response = requests.post(
