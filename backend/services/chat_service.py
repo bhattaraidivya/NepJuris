@@ -7,12 +7,15 @@ class ChatService:
         self.retriever = get_retriever()
         self.generator = Generator()
 
-    def generate_response(self, message: str) -> dict:
-        # 1. retrieve context
+    def generate_response(self, message: str, history: list[dict] | None = None) -> dict:
+        # 1. retrieve context (retrieval is based on the current message only —
+        # no query rewriting from history, so follow-ups that rely heavily on
+        # prior context may retrieve weaker matches even though the LLM still
+        # has the conversation to reason over)
         contexts = self.retriever.retrieve(message)
 
-        # 2. generate answer + scope classification using context
-        result = self.generator.generate(message, contexts)
+        # 2. generate answer + scope classification using context and history
+        result = self.generator.generate(message, contexts, history)
 
         # 3. only cite sources when the answer is actually grounded in the
         # corpus — a greeting or an out-of-scope refusal shouldn't carry

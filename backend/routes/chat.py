@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -18,8 +19,16 @@ chat_service = ChatService()
 CHAT_RATE_LIMIT = os.getenv("CHAT_RATE_LIMIT", "10/minute")
 
 
+class ChatTurn(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(..., min_length=1, max_length=2000)
+
+
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
+    # Client-held conversation history — the backend has no session store,
+    # so the frontend resends recent turns with each request.
+    history: list[ChatTurn] = Field(default_factory=list, max_length=20)
 
 
 @router.post("/chat")
@@ -29,8 +38,10 @@ def chat(request: Request, payload: ChatRequest):
     if not message:
         raise HTTPException(status_code=400, detail="Message cannot be empty.")
 
+    history = [turn.model_dump() for turn in payload.history]
+
     try:
-        return chat_service.generate_response(message)
+        return chat_service.generate_response(message, history)
 
     except RetrieverNotReadyError as e:
         logger.error("Retriever not ready: %s", e)

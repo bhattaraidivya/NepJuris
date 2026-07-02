@@ -1,5 +1,5 @@
 import { normalizeChatResponse } from "../core/apicontract";
-import type { ChatResponse } from "../types/chat.types";
+import type { ChatHistoryTurn, ChatResponse } from "../types/chat.types";
 import type { DocumentMeta, UploadResult } from "../types/document.types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -9,7 +9,10 @@ async function extractErrorMessage(res: Response, fallback: string): Promise<str
   return body?.detail || fallback;
 }
 
-export async function sendMessage(message: string): Promise<ChatResponse> {
+export async function sendMessage(
+  message: string,
+  history: ChatHistoryTurn[] = []
+): Promise<ChatResponse> {
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}/chat`, {
@@ -17,7 +20,7 @@ export async function sendMessage(message: string): Promise<ChatResponse> {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, history }),
     });
   } catch {
     throw new Error("Cannot connect to the backend. Is the server running?");

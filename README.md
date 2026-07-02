@@ -6,6 +6,8 @@ NepJuris is not a chatbot. It is a RAG-powered legal reasoning engine that retri
 
 Built entirely with local infrastructure. No external APIs. No cloud dependency. Runs on a single `docker compose up`.
 
+> **This is the `hosted` branch.** It swaps local Ollama inference for hosted Groq/Gemini APIs so the app can run on free hosting tiers — the "no external APIs, fully offline" description above applies to the `main` branch. See [DEPLOY.md](DEPLOY.md) for what's different here.
+
 ---
 
 ## The Problem
@@ -182,12 +184,24 @@ To add a new document to the corpus, use the **+ Add Document** button on the Do
 ## Features
 
 - **Multi-workspace chat** — independent sessions, each with persistent history
+- **Conversation memory** — follow-up questions carry recent chat context; the backend stays stateless, the frontend resends the last few turns with each request
 - **Retrieval-grounded responses** — every answer sourced from actual document chunks
+- **Scope classification** — every query is tagged `greeting` / `in_scope` / `out_of_scope` (e.g. non-Nepali jurisdiction) so citations only ever appear on answers actually grounded in the corpus
 - **Inline citations** — each answer lists the source document, page, and article/section it drew from
 - **Document browser** — metadata-aware corpus explorer with direct doc-to-chat interaction
 - **Live document ingestion** — upload a new PDF from the UI and it's chunked, embedded, and searchable immediately
 - **No-hallucination enforcement** — prompt-level constraint refusing unsupported answers
 - **Fully offline** — zero outbound network dependency after initial model pull
+
+---
+
+## Known Gaps
+
+- **No query rewriting for follow-ups.** Retrieval runs on the latest message only — a follow-up like "what about for married couples?" retrieves purely on that short text, not the resolved intent. The LLM still has the full conversation to reason over, so answers stay coherent, but retrieval quality on heavily context-dependent follow-ups is weaker than on a self-contained question.
+- **No caching layer.** Every request re-embeds the query and re-invokes the LLM, even for repeated or near-identical questions.
+- **Scope classification is self-reported.** The same LLM call that answers the question also tags its own scope (`greeting`/`in_scope`/`out_of_scope`) via structured output — there's no independent guardrail model, so a sufficiently adversarial prompt could still get it to mislabel.
+- **No dedicated prompt-injection hardening.** Retrieved context and conversation history are passed to the model with only prompt-level instructions to disregard embedded instructions — there's no separate sanitization or detection layer.
+- **Conversation history is client-held, not server-persisted.** History lives in the browser's `localStorage`; clearing it (or switching devices) loses context. There's no server-side session store.
 
 ---
 

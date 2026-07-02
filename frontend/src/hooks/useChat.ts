@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { sendMessage } from "../services/api";
+import { toHistoryTurns } from "../core/apicontract";
 import { MessageRole, MessageType, createMessage } from "../core/contracts";
 import type { ChatMessage, UseChatReturn } from "../types/chat.types";
 
@@ -11,6 +12,10 @@ type Chat = {
 
 const STORAGE_KEY = "nepjuris_conversations";
 const ACTIVE_CHAT_KEY = "nepjuris_active_chat";
+
+// How many prior turns to resend as context — mirrors the backend's own cap
+// (MAX_HISTORY_MESSAGES), trimmed here too just to keep the request small.
+const MAX_HISTORY_TURNS = 6;
 
 export default function useChat(): UseChatReturn {
   const [conversations, setConversations] = useState<Chat[]>(() => {
@@ -150,6 +155,10 @@ export default function useChat(): UseChatReturn {
   const handleSend = async (text: string): Promise<void> => {
     if (!text.trim()) return;
 
+    // Snapshot history from before this turn is added — a brand new chat
+    // naturally has none.
+    const history = toHistoryTurns(currentChat?.messages ?? [], MAX_HISTORY_TURNS);
+
     let chatId = currentChatId;
 
     // CREATE CHAT IF NONE EXISTS
@@ -200,7 +209,7 @@ export default function useChat(): UseChatReturn {
     setLoading(true);
 
     try {
-      const response = await sendMessage(text);
+      const response = await sendMessage(text, history);
 
       const aiMessage = createMessage(
         MessageRole.AI,

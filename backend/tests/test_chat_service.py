@@ -32,3 +32,12 @@ def test_greeting_has_no_sources():
     result = _service_with("greeting").generate_response("hi")
 
     assert result["sources"] == []
+
+
+def test_history_is_forwarded_to_generator():
+    service = _service_with("in_scope")
+    history = [{"role": "user", "content": "earlier question"}]
+
+    service.generate_response("follow up", history)
+
+    service.generator.generate.assert_called_once_with("follow up", CONTEXTS, history)

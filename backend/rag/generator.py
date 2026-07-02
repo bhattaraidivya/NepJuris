@@ -18,6 +18,11 @@ GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:ge
 
 REQUEST_TIMEOUT = 30
 
+# Number of prior turns (user + assistant messages combined) sent with each
+# request. The frontend keeps full history client-side; the backend stays
+# stateless and just trusts the last N turns it's handed each call.
+MAX_HISTORY_MESSAGES = int(os.getenv("MAX_HISTORY_MESSAGES", "6"))
+
 SYSTEM_PROMPT = """You are NepJuris, a retrieval-based legal assistant for Nepal.
 
 You DO NOT use external knowledge.
@@ -82,17 +87,22 @@ class Generator:
         context_text = format_context(contexts)
         return USER_PROMPT_TEMPLATE.format(context=context_text, question=query)
 
-    def generate(self, query, contexts):
-        """Returns {"answer": str, "scope": "greeting"|"in_scope"|"out_of_scope"}."""
+    def generate(self, query, contexts, history=None):
+        """Returns {"answer": str, "scope": "greeting"|"in_scope"|"out_of_scope"}.
+
+        history is an ordered list of {"role": "user"|"assistant", "content": str}
+        prior turns, oldest first; only the most recent MAX_HISTORY_MESSAGES are used.
+        """
         user_prompt = self.build_prompt(query, contexts)
+        history = (history or [])[-MAX_HISTORY_MESSAGES:]
 
         try:
-            raw = self._call_groq(user_prompt)
+            raw = self._call_groq(user_prompt, history)
         except Exception as groq_error:
             logger.warning("Groq generation failed, falling back to Gemini: %s", groq_error)
 
             try:
-                raw = self._call_gemini(user_prompt)
+                raw = self._call_gemini(user_prompt, history)
             except Exception as gemini_error:
                 logger.error("Gemini fallback also failed: %s", gemini_error)
                 raise GenerationError("Could not reach any configured LLM backend") from gemini_error
@@ -117,19 +127,22 @@ class Generator:
             logger.warning("LLM did not return valid JSON, using raw text as answer: %r", raw_text[:200])
             return {"answer": raw_text.strip(), "scope": "in_scope"}
 
-    def _call_groq(self, user_prompt):
+    def _call_groq(self, user_prompt, history):
         if not GROQ_API_KEY:
             raise GenerationError("GROQ_API_KEY is not configured")
+
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        for turn in history:
+            role = "assistant" if turn.get("role") == "assistant" else "user"
+            messages.append({"role": role, "content": turn.get("content", "")})
+        messages.append({"role": "user", "content": user_prompt})
 
         response = requests.post(
             GROQ_URL,
             headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
             json={
                 "model": GROQ_MODEL,
-                "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": user_prompt},
-                ],
+                "messages": messages,
                 "temperature": 0.3,
                 "response_format": {"type": "json_object"},
             },
@@ -145,16 +158,23 @@ class Generator:
         except (KeyError, IndexError, TypeError) as e:
             raise GenerationError(f"Unexpected Groq response shape: {data}") from e
 
-    def _call_gemini(self, user_prompt):
+    def _call_gemini(self, user_prompt, history):
         if not GEMINI_API_KEY:
             raise GenerationError("GEMINI_API_KEY is not configured")
+
+        contents = []
+        for turn in history:
+            role = "model" if turn.get("role") == "assistant" else "user"
+            contents.append({"role": role, "parts": [{"text": turn.get("content", "")}]})
+        contents.append({"role": "user", "parts": [{"text": user_prompt}]})
 
         url = GEMINI_URL.format(model=GEMINI_MODEL)
         response = requests.post(
             url,
             params={"key": GEMINI_API_KEY},
             json={
-                "contents": [{"parts": [{"text": f"{SYSTEM_PROMPT}\n\n{user_prompt}"}]}],
+                "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+                "contents": contents,
                 "generationConfig": {"temperature": 0.3, "responseMimeType": "application/json"},
             },
             timeout=REQUEST_TIMEOUT,

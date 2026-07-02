@@ -105,3 +105,35 @@ class TestScopeClassification:
         result = Generator().generate("hi", [])
 
         assert result == {"answer": "hi there", "scope": "greeting"}
+
+
+@patch("rag.generator.GROQ_API_KEY", "fake-groq-key")
+@patch("rag.generator.GEMINI_API_KEY", "")
+class TestConversationHistory:
+    @patch("rag.generator.requests.post", return_value=GROQ_SUCCESS)
+    def test_history_turns_are_forwarded_to_groq_as_messages(self, mock_post):
+        history = [
+            {"role": "user", "content": "what is the divorce law"},
+            {"role": "assistant", "content": "here's what applies..."},
+        ]
+
+        Generator().generate("what about for married couples?", [], history)
+
+        sent_messages = mock_post.call_args.kwargs["json"]["messages"]
+        assert sent_messages[0]["role"] == "system"
+        assert sent_messages[1] == {"role": "user", "content": "what is the divorce law"}
+        assert sent_messages[2] == {"role": "assistant", "content": "here's what applies..."}
+        assert sent_messages[-1]["role"] == "user"
+
+    @patch("rag.generator.requests.post", return_value=GROQ_SUCCESS)
+    def test_history_is_truncated_to_max_messages(self, mock_post):
+        history = [{"role": "user", "content": f"turn {i}"} for i in range(20)]
+
+        Generator().generate("latest question", [], history)
+
+        sent_messages = mock_post.call_args.kwargs["json"]["messages"]
+        # system + MAX_HISTORY_MESSAGES + final user turn
+        from rag.generator import MAX_HISTORY_MESSAGES
+
+        assert len(sent_messages) == 1 + MAX_HISTORY_MESSAGES + 1
+        assert sent_messages[1]["content"] == "turn 14"  # oldest kept turn
