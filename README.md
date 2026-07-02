@@ -118,7 +118,7 @@ nepjuris/
 ├── frontend/
 │   ├── Dockerfile
 │   ├── .env
-│   ├── dist/                   # production build (Vite output, served by Nginx)
+│   ├── dist/                   # production build (Vite output, built + served inside the frontend container; Nginx proxies to it)
 │   └── src/
 │       ├── pages/          # Home.jsx · Chat.tsx · Docs.jsx
 │       ├── components/
