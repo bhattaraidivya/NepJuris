@@ -11,13 +11,16 @@ class ChatService:
         # 1. retrieve context
         contexts = self.retriever.retrieve(message)
 
-        # 2. generate answer using context
-        response = self.generator.generate(message, contexts)
+        # 2. generate answer + scope classification using context
+        result = self.generator.generate(message, contexts)
 
-        # 3. surface citations alongside the answer
-        sources = self._build_sources(contexts)
+        # 3. only cite sources when the answer is actually grounded in the
+        # corpus — a greeting or an out-of-scope refusal shouldn't carry
+        # citations just because retrieval happened to score some chunks
+        # above threshold.
+        sources = self._build_sources(contexts) if result["scope"] == "in_scope" else []
 
-        return {"response": response, "sources": sources}
+        return {"response": result["answer"], "sources": sources}
 
     @staticmethod
     def _build_sources(contexts: list) -> list:
