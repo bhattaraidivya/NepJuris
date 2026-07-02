@@ -1,3 +1,4 @@
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -13,8 +14,16 @@ def _mock_response(status_code=200, json_data=None, text=""):
     return resp
 
 
-GROQ_SUCCESS = _mock_response(200, {"choices": [{"message": {"content": "groq answer"}}]})
-GEMINI_SUCCESS = _mock_response(200, {"candidates": [{"content": {"parts": [{"text": "gemini answer"}]}}]})
+def _json_content(scope, answer):
+    return json.dumps({"scope": scope, "answer": answer})
+
+
+GROQ_SUCCESS = _mock_response(
+    200, {"choices": [{"message": {"content": _json_content("in_scope", "groq answer")}}]}
+)
+GEMINI_SUCCESS = _mock_response(
+    200, {"candidates": [{"content": {"parts": [{"text": _json_content("in_scope", "gemini answer")}]}}]}
+)
 SERVER_ERROR = _mock_response(500, text="internal error")
 
 
@@ -25,14 +34,14 @@ class TestGeneratorFallback:
     def test_uses_groq_when_it_succeeds(self, mock_post):
         result = Generator().generate("question", [])
 
-        assert result == "groq answer"
+        assert result == {"answer": "groq answer", "scope": "in_scope"}
         assert mock_post.call_count == 1  # Gemini never called
 
     @patch("rag.generator.requests.post", side_effect=[SERVER_ERROR, GEMINI_SUCCESS])
     def test_falls_back_to_gemini_when_groq_fails(self, mock_post):
         result = Generator().generate("question", [])
 
-        assert result == "gemini answer"
+        assert result == {"answer": "gemini answer", "scope": "in_scope"}
         assert mock_post.call_count == 2
 
     @patch("rag.generator.requests.post", return_value=SERVER_ERROR)
@@ -47,7 +56,7 @@ class TestGeneratorFallback:
 def test_skips_groq_and_uses_gemini_when_groq_key_missing(mock_post):
     result = Generator().generate("question", [])
 
-    assert result == "gemini answer"
+    assert result == {"answer": "gemini answer", "scope": "in_scope"}
     assert mock_post.call_count == 1  # only Gemini was actually called over the network
 
 
@@ -56,3 +65,43 @@ def test_skips_groq_and_uses_gemini_when_groq_key_missing(mock_post):
 def test_raises_when_no_api_keys_configured():
     with pytest.raises(GenerationError):
         Generator().generate("question", [])
+
+
+@patch("rag.generator.GROQ_API_KEY", "fake-groq-key")
+@patch("rag.generator.GEMINI_API_KEY", "")
+class TestScopeClassification:
+    @patch(
+        "rag.generator.requests.post",
+        return_value=_mock_response(
+            200, {"choices": [{"message": {"content": _json_content("out_of_scope", "not Nepal law")}}]}
+        ),
+    )
+    def test_tags_out_of_scope_answers(self, mock_post):
+        result = Generator().generate("US helmet law", [])
+
+        assert result == {"answer": "not Nepal law", "scope": "out_of_scope"}
+
+    @patch(
+        "rag.generator.requests.post",
+        return_value=_mock_response(200, {"choices": [{"message": {"content": "not json at all"}}]}),
+    )
+    def test_falls_back_to_raw_text_when_response_is_not_json(self, mock_post):
+        result = Generator().generate("question", [])
+
+        assert result == {"answer": "not json at all", "scope": "in_scope"}
+
+    @patch(
+        "rag.generator.requests.post",
+        return_value=_mock_response(
+            200,
+            {
+                "choices": [
+                    {"message": {"content": '```json\n{"scope": "greeting", "answer": "hi there"}\n```'}}
+                ]
+            },
+        ),
+    )
+    def test_strips_markdown_fences_around_json(self, mock_post):
+        result = Generator().generate("hi", [])
+
+        assert result == {"answer": "hi there", "scope": "greeting"}
